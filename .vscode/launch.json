@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-CricketApplication<cricket>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.auction.cricket.CricketApplication",
+            "projectName": "cricket",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

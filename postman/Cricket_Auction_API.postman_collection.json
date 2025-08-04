@@ -1,0 +1,383 @@
+{
+	"info": {
+		"_postman_id": "cricket-auction-api",
+		"name": "Cricket Auction API",
+		"description": "API collection for Cricket Auction application",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"password123\",\n    \"email\": \"test@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "register"]
+						},
+						"description": "Register a new user"
+					}
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login and get JWT token"
+					}
+				}
+			]
+		},
+		{
+			"name": "Teams",
+			"item": [
+				{
+					"name": "Get All Teams",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/teams",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "teams"]
+						},
+						"description": "Get all teams"
+					}
+				},
+				{
+					"name": "Get Team by Username",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/teams/user/testuser",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "teams", "user", "testuser"]
+						},
+						"description": "Get team details for a specific user"
+					}
+				},
+				{
+					"name": "Get Team by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/teams/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "teams", "1"]
+						},
+						"description": "Get team details by ID"
+					}
+				}
+			]
+		},
+		{
+			"name": "Players",
+			"item": [
+				{
+					"name": "Get All Players",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/players",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "players"]
+						},
+						"description": "Get all players"
+					}
+				},
+				{
+					"name": "Get Available Players",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/players/available",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "players", "available"]
+						},
+						"description": "Get all available players"
+					}
+				},
+				{
+					"name": "Get Players by Team",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/players/team/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "players", "team", "1"]
+						},
+						"description": "Get all players in a team"
+					}
+				},
+				{
+					"name": "Create Player",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Virat Kohli\",\n    \"age\": 33,\n    \"role\": \"BATSMAN\",\n    \"basePrice\": 1000000,\n    \"country\": \"India\",\n    \"battingStyle\": \"Right-handed\",\n    \"bowlingStyle\": \"Right-arm medium\",\n    \"stats\": {\n        \"matches\": 100,\n        \"runs\": 5000,\n        \"wickets\": 0,\n        \"average\": 50.5\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/players",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "players"]
+						},
+						"description": "Create a new player"
+					}
+				}
+			]
+		},
+		{
+			"name": "Auctions",
+			"item": [
+				{
+					"name": "Get All Auctions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auctions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auctions"]
+						},
+						"description": "Get all auctions"
+					}
+				},
+				{
+					"name": "Get Auction by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auctions/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auctions", "1"]
+						},
+						"description": "Get auction details by ID"
+					}
+				},
+				{
+					"name": "Create Auction",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"IPL 2024 Auction\",\n    \"description\": \"Annual IPL player auction\",\n    \"startTime\": \"2024-02-20T10:00:00\",\n    \"endTime\": \"2024-02-20T18:00:00\",\n    \"baseBudget\": 10000000,\n    \"playerIds\": [1, 2, 3]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auctions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auctions"]
+						},
+						"description": "Create a new auction"
+					}
+				},
+				{
+					"name": "Get Upcoming Auctions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auctions/upcoming",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auctions", "upcoming"]
+						},
+						"description": "Get all upcoming auctions"
+					}
+				},
+				{
+					"name": "Get Recent Auctions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auctions/recent",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auctions", "recent"]
+						},
+						"description": "Get recent auctions"
+					}
+				}
+			]
+		},
+		{
+			"name": "Bids",
+			"item": [
+				{
+					"name": "Place Bid",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"auctionId\": 1,\n    \"playerId\": 1,\n    \"amount\": 1500000\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/bids",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "bids"]
+						},
+						"description": "Place a bid on a player in an auction"
+					}
+				},
+				{
+					"name": "Get Bids by Auction",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/bids/auction/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "bids", "auction", "1"]
+						},
+						"description": "Get all bids for an auction"
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [""]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [""]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "your-jwt-token-here",
+			"type": "string"
+		}
+	]
+} 
