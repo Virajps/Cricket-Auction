@@ -54,12 +54,15 @@ public class Player {
     @Column(name = "bowling_style")
     private String bowlingStyle;
 
+    @Column(name = "photo_url")
+    private String photoUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private PlayerStatus status = PlayerStatus.AVAILABLE;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id")
+    @JoinColumn(name = "team_id", nullable = true)
     private Team team;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -52,6 +52,8 @@ const AuctionDetails = () => {
         fetchAuctionDetails();
     }, [id, fetchAuctionDetails]);
 
+    
+
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString('en-US', {
             year: 'numeric',
@@ -103,6 +105,14 @@ const AuctionDetails = () => {
                         />
                     </Box>
                     <Box>
+                        <Button
+                            variant="outlined"
+                            color="primary"
+                            sx={{ mr: 2 }}
+                            onClick={() => navigate(-1)}
+                        >
+                            Back
+                        </Button>
                         {(auction.isActive && (user?.role === 'ADMIN' || user?.username === auction.createdBy)) && (
                             <>
                                 <Button
@@ -155,7 +165,6 @@ const AuctionDetails = () => {
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
                     <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} textColor="primary" indicatorColor="primary">
                         <Tab label="Overview" />
-                        <Tab label="Categories" />
                         <Tab label="Sponsors" />
                         <Tab label="Settings" />
                     </Tabs>
@@ -201,33 +210,6 @@ const AuctionDetails = () => {
                 {activeTab === 1 && (
                     <Paper elevation={1} sx={{ p: 3 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="h6">Player Categories</Typography>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={() => navigate(`/auctions/${id}/categories`)}
-                            >
-                                Manage Categories
-                            </Button>
-                        </Box>
-                        <Grid container spacing={2}>
-                            {auction.categories?.map((category) => (
-                                <Grid item xs={12} sm={6} md={4} key={category.id}>
-                                    <Card elevation={0} sx={{ border: '1px solid #eee' }}>
-                                        <CardContent>
-                                            <Typography variant="subtitle1" fontWeight="bold">{category.name}</Typography>
-                                            <Typography variant="body2" color="text.secondary">{category.description}</Typography>
-                                        </CardContent>
-                                    </Card>
-                                </Grid>
-                            ))}
-                        </Grid>
-                    </Paper>
-                )}
-
-                {activeTab === 2 && (
-                    <Paper elevation={1} sx={{ p: 3 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                             <Typography variant="h6">Sponsors</Typography>
                             <Button
                                 variant="contained"
@@ -268,7 +250,7 @@ const AuctionDetails = () => {
                     </Paper>
                 )}
 
-                {activeTab === 3 && (
+                {activeTab === 2 && (
                     <Paper elevation={1} sx={{ p: 3 }}>
                         <Typography variant="h6" mb={2}>Auction Settings</Typography>
                         <Grid container spacing={3}>

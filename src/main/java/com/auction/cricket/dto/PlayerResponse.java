@@ -17,4 +17,7 @@ public class PlayerResponse {
     private String status;
     private boolean isSold;
     private boolean isUnsold;
+    private Double currentPrice;
+    private String photoUrl;
+
 }

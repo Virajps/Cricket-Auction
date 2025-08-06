@@ -41,6 +41,7 @@ const AuctionForm = () => {
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
 
     const fetchAuction = useCallback(async () => {
         try {
@@ -87,20 +88,33 @@ const AuctionForm = () => {
         }));
     };
 
+    const handleFileChange = (e) => {
+        setSelectedFile(e.target.files[0]);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
         try {
+            let logoUrl = formData.logoUrl;
+            if (selectedFile) {
+                const uploadResponse = await auctionService.uploadLogo(selectedFile);
+                logoUrl = uploadResponse; // Assuming the response is the URL
+            }
+
             const auctionData = {
                 ...formData,
+                logoUrl,
                 pointsPerTeam: parseInt(formData.pointsPerTeam),
                 totalTeams: parseInt(formData.totalTeams),
                 minimumBid: parseFloat(formData.minimumBid),
                 bidIncreaseBy: parseFloat(formData.bidIncreaseBy),
                 playersPerTeam: parseInt(formData.playersPerTeam),
-                auctionDate: new Date(formData.auctionDate).toISOString()
+                auctionDate: new Date(formData.auctionDate).toISOString(),
+                isActive: formData.isActive, // Ensure isActive is always sent
+                playerRegistrationEnabled: formData.playerRegistrationEnabled // Ensure playerRegistrationEnabled is always sent
             };
 
             console.log('Submitting auction data:', auctionData);
@@ -113,7 +127,15 @@ const AuctionForm = () => {
             navigate('/auctions');
         } catch (error) {
             console.error('Error saving auction:', error);
-            setError(error.response?.data?.message || 'Failed to save auction');
+            let errorMessage = 'Failed to save auction';
+            if (error.response && error.response.data && error.response.data.details) {
+                // If there are field-specific validation errors
+                errorMessage = Object.values(error.response.data.details).join(', ');
+            } else if (error.response && error.response.data && error.response.data.message) {
+                // If there is a general error message from the backend
+                errorMessage = error.response.data.message;
+            }
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -149,7 +171,7 @@ const AuctionForm = () => {
 
                     {error && (
                         <Alert severity="error" sx={{ mb: 2 }}>
-                            {error}
+                            {error.message}
                         </Alert>
                     )}
 
@@ -173,7 +195,27 @@ const AuctionForm = () => {
                                     name="logoUrl"
                                     value={formData.logoUrl}
                                     onChange={handleChange}
+                                    sx={{ display: 'none' }} // Hide the text field
                                 />
+                                <input
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    id="auction-logo-upload-button"
+                                    type="file"
+                                    onChange={handleFileChange}
+                                />
+                                <label htmlFor="auction-logo-upload-button">
+                                    <Button variant="outlined" component="span">
+                                        Upload Auction Logo
+                                    </Button>
+                                </label>
+                                {selectedFile && <Typography variant="body2" sx={{ ml: 2, display: 'inline' }}>{selectedFile.name}</Typography>}
+                                {formData.logoUrl && !selectedFile && (
+                                    <Box sx={{ mt: 2 }}>
+                                        <Typography variant="body2">Current Logo:</Typography>
+                                        <img src={formData.logoUrl} alt="Current Logo" style={{ maxWidth: '100px', maxHeight: '100px' }} />
+                                    </Box>
+                                )}
                             </Grid>
 
                             <Grid item xs={12}>
@@ -288,9 +330,9 @@ const AuctionForm = () => {
                                 <Box display="flex" justifyContent="flex-end" gap={2}>
                                     <Button
                                         variant="outlined"
-                                        onClick={() => navigate('/auctions')}
+                                        onClick={() => navigate(-1)}
                                     >
-                                        Cancel
+                                        Back
                                     </Button>
                                     <Button
                                         type="submit"

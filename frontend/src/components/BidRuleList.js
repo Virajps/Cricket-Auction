@@ -68,6 +68,12 @@ const BidRuleList = () => {
                         >
                             Add Bid Rule
                         </Button>
+                        <Button 
+                            variant="outlined"
+                            onClick={() => navigate(-1)}
+                        >
+                            Back
+                        </Button>
                     </Box>
 
                     {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}

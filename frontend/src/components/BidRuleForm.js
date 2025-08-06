@@ -10,7 +10,6 @@ const BidRuleForm = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [rule, setRule] = useState({
-        category: '',
         minimumBid: '',
         maximumBid: '',
         bidIncrement: ''
@@ -126,9 +125,16 @@ const BidRuleForm = () => {
                             variant="contained"
                             color="primary"
                             disabled={loading}
-                            sx={{ mt: 2 }}
+                            sx={{ mt: 2, mr: 2 }}
                         >
                             {loading ? 'Saving...' : (id ? 'Update Bid Rule' : 'Add Bid Rule')}
+                        </Button>
+                        <Button 
+                            variant="outlined"
+                            onClick={() => navigate(-1)}
+                            sx={{ mt: 2 }}
+                        >
+                            Back
                         </Button>
                     </form>
                 </Paper>

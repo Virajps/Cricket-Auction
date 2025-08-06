@@ -32,4 +32,6 @@ public class PlayerRequest {
     private String bowlingStyle;
 
     private String status;
+
+    private String photoUrl;
 }

@@ -14,7 +14,8 @@ import {
     Alert,
     Divider,
     Paper,
-    Stack
+    Stack,
+    Avatar
 } from '@mui/material';
 import {
     Edit as EditIcon,
@@ -27,7 +28,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getTeamsByAuction, deleteTeam, toggleTeamStatus, auctionService } from '../services/api';
+import { teamService, auctionService } from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const cardVariants = {
@@ -53,10 +54,10 @@ const TeamList = () => {
             setLoading(true);
             setError(null);
             const [teamsResponse, auctionResponse] = await Promise.all([
-                getTeamsByAuction(auctionId),
+                teamService.getByAuction(auctionId),
                 auctionService.getById(auctionId)
             ]);
-            setTeams(teamsResponse.data);
+            setTeams(teamsResponse || []);
             setAuction(auctionResponse);
         } catch (err) {
             console.error('Error fetching data:', err);
@@ -74,7 +75,7 @@ const TeamList = () => {
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this team?')) {
             try {
-                await deleteTeam(id);
+                await teamService.delete(id);
                 fetchData();
             } catch (err) {
                 console.error('Error deleting team:', err);
@@ -85,7 +86,7 @@ const TeamList = () => {
 
     const handleToggleStatus = async (id) => {
         try {
-            await toggleTeamStatus(id);
+            await teamService.toggleStatus(id);
             fetchData();
         } catch (err) {
             console.error('Error toggling status:', err);
@@ -157,6 +158,12 @@ const TeamList = () => {
                 >
                     Create Team
                 </Button>
+                <Button
+                    variant="outlined"
+                    onClick={() => navigate(-1)}
+                >
+                    Back
+                </Button>
             </Box>
 
             {error && (
@@ -181,9 +188,12 @@ const TeamList = () => {
                                 >
                                     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                                         <CardContent sx={{ flexGrow: 1 }}>
-                                            <Typography variant="h5" component="h2" gutterBottom>
-                                                {team.name}
-                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                                <Avatar src={team.logoUrl || 'https://via.placeholder.com/50'} sx={{ width: 50, height: 50, mr: 2 }} />
+                                                <Typography variant="h5" component="h2" gutterBottom>
+                                                    {team.name}
+                                                </Typography>
+                                            </Box>
                                             <Divider sx={{ my: 1 }} />
                                             <Grid container spacing={2}>
                                                 <Grid item xs={6}>

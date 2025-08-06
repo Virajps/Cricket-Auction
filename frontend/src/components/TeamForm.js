@@ -27,8 +27,10 @@ const TeamForm = () => {
     const { user } = useAuth();
     const [formData, setFormData] = useState({
         name: '',
-        isActive: true
+        isActive: true,
+        logoUrl: ''
     });
+    const [selectedFile, setSelectedFile] = useState(null);
     const [auction, setAuction] = useState(null);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -68,7 +70,8 @@ const TeamForm = () => {
             const response = await teamService.getById(id);
             setFormData({
                 name: response.name,
-                isActive: response.isActive
+                isActive: response.isActive,
+                logoUrl: response.logoUrl || ''
             });
         } catch (error) {
             console.error('Error fetching team:', error);
@@ -100,16 +103,28 @@ const TeamForm = () => {
         if (error) setError(null);
     };
 
+    const handleFileChange = (e) => {
+        setSelectedFile(e.target.files[0]);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
         setLoading(true);
 
         try {
+            let logoUrl = formData.logoUrl;
+            if (selectedFile) {
+                const uploadResponse = await teamService.uploadLogo(selectedFile);
+                logoUrl = uploadResponse; // Assuming the response is the URL
+            }
+
+            const teamToSave = { ...formData, logoUrl };
+
             if (id) {
-                await teamService.update(id, formData);
+                await teamService.update(auctionId, id, teamToSave);
             } else {
-                await teamService.create(auctionId, formData);
+                await teamService.create(auctionId, teamToSave);
             }
             navigate(`/auctions/${auctionId}/teams`);
         } catch (error) {
@@ -248,6 +263,28 @@ const TeamForm = () => {
                                     }} />
                             </Grid>
 
+                            <Grid item xs={12}>
+                                <input
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    id="team-logo-upload-button"
+                                    type="file"
+                                    onChange={handleFileChange}
+                                />
+                                <label htmlFor="team-logo-upload-button">
+                                    <Button variant="outlined" component="span">
+                                        Upload Team Logo
+                                    </Button>
+                                </label>
+                                {selectedFile && <Typography variant="body2" sx={{ ml: 2, display: 'inline' }}>{selectedFile.name}</Typography>}
+                                {formData.logoUrl && !selectedFile && (
+                                    <Box sx={{ mt: 2 }}>
+                                        <Typography variant="body2">Current Logo:</Typography>
+                                        <img src={formData.logoUrl} alt="Current Logo" style={{ maxWidth: '100px', maxHeight: '100px' }} />
+                                    </Box>
+                                )}
+                            </Grid>
+
                             {id && (
                                 <Grid item xs={12}>
                                     <FormControlLabel
@@ -269,10 +306,10 @@ const TeamForm = () => {
                                 <Box display="flex" justifyContent="flex-end" gap={2}>
                                     <Button
                                         variant="outlined"
-                                        onClick={() => navigate(`/auctions/${auctionId}/teams`)}
+                                        onClick={() => navigate(-1)}
                                         size="large"
                                     >
-                                        Cancel
+                                        Back
                                     </Button>
                                     <Button
                                         type="submit"

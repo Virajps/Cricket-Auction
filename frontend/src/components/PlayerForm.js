@@ -31,8 +31,10 @@ const PlayerForm = () => {
         category: '',
         nationality: '',
         battingStyle: '',
-        bowlingStyle: ''
+        bowlingStyle: '',
+        photoUrl: ''
     });
+    const [selectedFile, setSelectedFile] = useState(null);
     const [auction, setAuction] = useState(null);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -63,7 +65,7 @@ const PlayerForm = () => {
         try {
             setLoading(true);
             const response = await playerService.getById(auctionId, id);
-            setFormData({
+                        setFormData({
                 name: response.name,
                 age: response.age,
                 role: response.role,
@@ -71,7 +73,8 @@ const PlayerForm = () => {
                 category: response.category,
                 nationality: response.nationality,
                 battingStyle: response.battingStyle || '',
-                bowlingStyle: response.bowlingStyle || ''
+                bowlingStyle: response.bowlingStyle || '',
+                photoUrl: response.photoUrl || ''
             });
         } catch (error) {
             console.error('Error fetching player:', error);
@@ -109,16 +112,28 @@ const PlayerForm = () => {
         if (error) setError(null);
     };
 
+    const handleFileChange = (e) => {
+        setSelectedFile(e.target.files[0]);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
         setLoading(true);
 
         try {
+            let photoUrl = formData.photoUrl;
+            if (selectedFile) {
+                const uploadResponse = await playerService.uploadPhoto(selectedFile);
+                photoUrl = uploadResponse; // Assuming the response is the URL
+            }
+
+            const playerToSave = { ...formData, photoUrl };
+
             if (id) {
-                await playerService.update(auctionId, id, formData);
+                await playerService.update(auctionId, id, playerToSave);
             } else {
-                await playerService.create(auctionId, formData);
+                await playerService.create(auctionId, playerToSave);
             }
             navigate(`/auctions/${auctionId}/players`);
         } catch (error) {
@@ -301,7 +316,6 @@ const PlayerForm = () => {
                                     ))}
                                 </TextField>
                             </Grid>
-
                             <Grid item xs={12} sm={6}>
                                 <TextField
                                     fullWidth
@@ -404,14 +418,31 @@ const PlayerForm = () => {
                             </Grid>
 
                             <Grid item xs={12}>
+                                <input
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    id="raised-button-file"
+                                    multiple
+                                    type="file"
+                                    onChange={handleFileChange}
+                                />
+                                <label htmlFor="raised-button-file">
+                                    <Button variant="outlined" component="span">
+                                        Upload Photo
+                                    </Button>
+                                </label>
+                                {selectedFile && <Typography variant="body2" sx={{ ml: 2, display: 'inline' }}>{selectedFile.name}</Typography>}
+                            </Grid>
+
+                            <Grid item xs={12}>
                                 <Divider sx={{ my: 2 }} />
                                 <Box display="flex" justifyContent="flex-end" gap={2}>
                                     <Button
                                         variant="outlined"
-                                        onClick={() => navigate(`/auctions/${auctionId}/players`)}
+                                        onClick={() => navigate(-1)}
                                         size="large"
                                     >
-                                        Cancel
+                                        Back
                                     </Button>
                                     <Button
                                         type="submit"

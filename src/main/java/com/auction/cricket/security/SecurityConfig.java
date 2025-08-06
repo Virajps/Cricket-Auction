@@ -34,21 +34,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/uploads/**").permitAll()
                 .requestMatchers("/ws/**").permitAll()
-                .requestMatchers("/api/users/me").authenticated()
-                // Allow authenticated users to create players and teams for auctions
-                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/auctions/*/players").authenticated()
-                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/auctions/*/teams").authenticated()
-                // Admin-only endpoints for all other POSTs to /api/auctions/**
-                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/auctions/**").hasRole("ADMIN")
-                .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/auctions/**").hasRole("ADMIN")
-                .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/auctions/**").hasRole("ADMIN")
-                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/teams/**").hasRole("ADMIN")
-                .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/teams/**").hasRole("ADMIN")
-                .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/teams/**").hasRole("ADMIN")
-                // Authenticated for GET
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auctions/**").authenticated()
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/teams/**").authenticated()
+                .requestMatchers("/api/auctions/**").authenticated()
+                .requestMatchers("/api/teams/**").authenticated()
                 .requestMatchers("/api/players/**").authenticated()
                 .requestMatchers("/api/bids/**").authenticated()
                 .anyRequest().authenticated()
@@ -65,7 +54,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);

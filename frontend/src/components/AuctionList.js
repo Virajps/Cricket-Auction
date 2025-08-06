@@ -14,7 +14,8 @@ import {
     IconButton,
     Tooltip,
     CircularProgress,
-    Alert
+    Alert,
+    Avatar
 } from '@mui/material';
 import {
     Edit as EditIcon,
@@ -168,9 +169,14 @@ const AuctionList = () => {
                                 <motion.div initial="hidden" animate="visible" exit="hidden" variants={cardVariants} custom={i}>
                                     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                                         <CardContent sx={{ flexGrow: 1 }}>
-                                            <Typography variant="h5" component="h2" gutterBottom>
-                                                {auction.name}
-                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                                {auction.logoUrl && (
+                                                    <Avatar src={auction.logoUrl} alt={auction.name} sx={{ width: 50, height: 50, mr: 2 }} />
+                                                )}
+                                                <Typography variant="h5" component="h2" gutterBottom>
+                                                    {auction.name}
+                                                </Typography>
+                                            </Box>
                                             <Typography variant="body2" color="text.secondary" gutterBottom>
                                                 {formatDate(auction.auctionDate)}
                                             </Typography>

@@ -97,6 +97,12 @@ const SponsorList = () => {
             >
               Add Sponsor
             </Button>
+            <Button
+              variant="outlined"
+              onClick={() => navigate(-1)}
+            >
+              Back
+            </Button>
           </Box>
 
           {error && (

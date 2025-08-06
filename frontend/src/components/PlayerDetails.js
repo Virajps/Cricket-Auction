@@ -3,49 +3,49 @@ import {
     Container,
     Paper,
     Typography,
-    TextField,
-    Button,
     Box,
     Grid,
     List,
     ListItem,
     ListItemText,
     Divider,
+    CircularProgress,
+    Avatar,
 } from '@mui/material';
 import { useParams } from 'react-router-dom';
 import { playerService, bidService } from '../services/api';
 import { webSocketService } from '../services/websocket';
 
 const PlayerDetails = () => {
-    const { id } = useParams();
+    const { id , auctionId} = useParams();
     const [player, setPlayer] = useState(null);
     const [bids, setBids] = useState([]);
-    const [bidAmount, setBidAmount] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchPlayer = async () => {
+        const fetchData = async () => {
+            setLoading(true);
             try {
-                const response = await playerService.getById(id);
-                setPlayer(response.data);
+                const playerResponse = await playerService.getById(auctionId, id);
+                setPlayer(playerResponse);
+
+                const bidsResponse = await bidService.getByPlayer(auctionId, id);
+                setBids(bidsResponse);
+
             } catch (error) {
-                console.error('Error fetching player:', error);
+                console.error('Error fetching data:', error);
+                setError('Failed to load player details or bids.');
+                setPlayer(null);
+                setBids([]);
+            } finally {
+                setLoading(false);
             }
         };
 
-        const fetchBids = async () => {
-            try {
-                const response = await bidService.getByPlayer(id);
-                setBids(response.data);
-            } catch (error) {
-                console.error('Error fetching bids:', error);
-            }
-        };
+        fetchData();
 
-        fetchPlayer();
-        fetchBids();
-
-        // Subscribe to WebSocket updates
+        // WebSocket subscriptions remain the same
         webSocketService.subscribeToBids((bid) => {
             if (bid.playerId === parseInt(id)) {
                 setBids((prevBids) => [bid, ...prevBids]);
@@ -53,40 +53,30 @@ const PlayerDetails = () => {
         });
 
         webSocketService.subscribeToPlayerUpdates(id, () => {
-            fetchPlayer();
+            fetchData();
         });
 
         return () => {
             webSocketService.disconnect();
         };
-    }, [id]);
+    }, [id, auctionId]);
 
-    const handleBid = async (e) => {
-        e.preventDefault();
-        setError('');
-
-        try {
-            const amount = parseFloat(bidAmount);
-            if (isNaN(amount) || amount <= player.currentPrice) {
-                setError('Bid amount must be higher than current price');
-                return;
-            }
-
-            await bidService.placeBid({
-                playerId: parseInt(id),
-                amount,
-            });
-
-            setBidAmount('');
-        } catch (error) {
-            setError('Error placing bid. Please try again.');
-        }
-    };
+    
 
     if (loading) {
         return (
             <Container sx={{ py: 8, display: 'flex', justifyContent: 'center' }}>
                 <CircularProgress />
+            </Container>
+        );
+    }
+
+    if (!player) {
+        return (
+            <Container sx={{ py: 8 }}>
+                <Typography variant="h6" color="text.secondary" align="center">
+                    Player not found.
+                </Typography>
             </Container>
         );
     }
@@ -97,20 +87,23 @@ const PlayerDetails = () => {
                 <Paper elevation={0} sx={{ p: 4, bgcolor: 'background.paper', borderRadius: 2 }}>
                     <Grid container spacing={3}>
                         <Grid item xs={12} md={6}>
+                            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                                <Avatar src={player.photoUrl || 'https://via.placeholder.com/150'} sx={{ width: 150, height: 150 }} />
+                            </Box>
                             <Typography variant="h4" component="h1" gutterBottom>
                                 {player.name}
                             </Typography>
                             <Typography variant="h6" color="text.secondary" gutterBottom>
-                                {player.role} | {player.nationality}
+                                {player.role} | {player.category} | {player.nationality}
                             </Typography>
                             <Typography variant="body1" paragraph>
                                 Age: {player.age}
                             </Typography>
                             <Typography variant="body1" paragraph>
-                                Base Price: ₹{player.basePrice.toLocaleString()}
+                                Base Price: ₹{player.basePrice?.toLocaleString()}
                             </Typography>
                             <Typography variant="body1" paragraph>
-                                Current Price: ₹{player.currentPrice.toLocaleString()}
+                                Current Price: ₹{player.currentPrice?.toLocaleString()}
                             </Typography>
                             <Typography variant="body1" paragraph>
                                 Status: {player.status}
@@ -121,37 +114,7 @@ const PlayerDetails = () => {
                                 </Typography>
                             )}
                         </Grid>
-                        <Grid item xs={12} md={6}>
-                            <Typography variant="h5" gutterBottom>
-                                Place Bid
-                            </Typography>
-                            {error && (
-                                <Typography color="error" gutterBottom>
-                                    {error}
-                                </Typography>
-                            )}
-                            <form onSubmit={handleBid}>
-                                <TextField
-                                    fullWidth
-                                    label="Bid Amount"
-                                    type="number"
-                                    value={bidAmount}
-                                    onChange={(e) => setBidAmount(e.target.value)}
-                                    margin="normal"
-                                    required
-                                />
-                                <Button
-                                    type="submit"
-                                    variant="contained"
-                                    color="primary"
-                                    fullWidth
-                                    sx={{ mt: 2 }}
-                                    disabled={player.isSold}
-                                >
-                                    Place Bid
-                                </Button>
-                            </form>
-                        </Grid>
+                        
                     </Grid>
                 </Paper>
 
@@ -164,7 +127,7 @@ const PlayerDetails = () => {
                             <React.Fragment key={bid.id}>
                                 <ListItem>
                                     <ListItemText
-                                        primary={`${bid.teamName} - $${bid.amount.toLocaleString()}`}
+                                        primary={`${bid.teamName} - ${bid.amount?.toLocaleString()}`}
                                         secondary={new Date(bid.timestamp).toLocaleString()}
                                     />
                                 </ListItem>
@@ -178,4 +141,4 @@ const PlayerDetails = () => {
     );
 };
 
-export default PlayerDetails; 
+export default PlayerDetails;

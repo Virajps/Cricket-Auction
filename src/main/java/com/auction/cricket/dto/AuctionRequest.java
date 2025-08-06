@@ -35,4 +35,10 @@ public class AuctionRequest {
     @NotNull(message = "Players per team is required")
     @Min(value = 1, message = "Players per team must be at least 1")
     private Integer playersPerTeam;
+
+    @NotNull(message = "Active status is required")
+    private Boolean isActive;
+
+    @NotNull(message = "Player registration enabled status is required")
+    private Boolean playerRegistrationEnabled;
 } 

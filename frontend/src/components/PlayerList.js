@@ -17,6 +17,11 @@ import {
     CircularProgress,
     Alert,
     Tooltip,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Avatar,
 } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -46,6 +51,14 @@ const PlayerList = () => {
     const [loading, setLoading] = useState(true);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [playerToDelete, setPlayerToDelete] = useState(null);
+    const [statusFilter, setStatusFilter] = useState('ALL');
+
+    const filteredPlayers = players.filter(player => {
+        if (statusFilter === 'ALL') {
+            return true;
+        }
+        return player.status === statusFilter;
+    });
 
     const fetchAuction = useCallback(async () => {
         try {
@@ -64,8 +77,8 @@ const PlayerList = () => {
     const fetchPlayers = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await playerService.getAvailable(auctionId);
-            setPlayers(response);
+            const response = await playerService.getAll(auctionId);
+            setPlayers(response || []);
         } catch (error) {
             console.error('Error fetching players:', error);
             setError({
@@ -109,6 +122,20 @@ const PlayerList = () => {
         setPlayerToDelete(null);
     };
 
+    const handleSetUnsoldAvailable = async () => {
+        try {
+            await auctionService.setUnsoldPlayersAvailable(auctionId);
+            fetchPlayers(); // Refresh player list to reflect changes
+        } catch (error) {
+            console.error('Error setting unsold players available:', error);
+            setError({
+                type: MessageType.ERROR,
+                title: 'Failed to Set Unsold Players Available',
+                message: 'Unable to set unsold players available. Please try again later.'
+            });
+        }
+    };
+
     if (loading) {
         return (
             <Container sx={{ py: 8, display: 'flex', justifyContent: 'center' }}>
@@ -123,25 +150,57 @@ const PlayerList = () => {
                 <Typography variant="h2" component="h1">
                     Players
                 </Typography>
-                {(user?.role === 'ADMIN' || user?.username === auction?.createdBy) && (
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                    <FormControl sx={{ minWidth: 120 }}>
+                        <InputLabel id="status-filter-label">Status</InputLabel>
+                        <Select
+                            labelId="status-filter-label"
+                            id="status-filter"
+                            value={statusFilter}
+                            label="Status"
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                            <MenuItem value="ALL">All</MenuItem>
+                            <MenuItem value="AVAILABLE">Available</MenuItem>
+                            <MenuItem value="SOLD">Sold</MenuItem>
+                            <MenuItem value="UNSOLD">Unsold</MenuItem>
+                        </Select>
+                    </FormControl>
+                    {(user?.role === 'ADMIN' || user?.username === auction?.createdBy) && (
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => navigate(`/auctions/${auctionId}/players/new`)}
+                        >
+                            Add Player
+                        </Button>
+                    )}
                     <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => navigate(`/auctions/${auctionId}/players/new`)}
+                        variant="outlined"
+                        onClick={() => navigate(-1)}
                     >
-                        Add Player
+                        Back
                     </Button>
-                )}
+                    {(user?.role === 'ADMIN' || user?.username === auction?.createdBy) && (
+                        <Button
+                            variant="outlined"
+                            color="info"
+                            onClick={handleSetUnsoldAvailable}
+                        >
+                            Set All Unsold Players Available
+                        </Button>
+                    )}
+                </Box>
             </Box>
             {error && (
                 <Alert severity="error" sx={{ mb: 4 }}>
-                    {error}
+                    {error.message}
                 </Alert>
             )}
             <Grid container spacing={3}>
                 <AnimatePresence>
-                    {players.length > 0 ? (
-                        players.map((player, i) => (
+                    {filteredPlayers.length > 0 ? (
+                        filteredPlayers.map((player, i) => (
                             <Grid item xs={12} sm={6} md={4} key={player.id}>
                                 <motion.div
                                     initial="hidden"
@@ -152,9 +211,12 @@ const PlayerList = () => {
                                 >
                                     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                                         <CardContent sx={{ flexGrow: 1 }}>
-                                            <Typography variant="h5" component="h2" gutterBottom>
-                                                {player.name}
-                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                                <Avatar src={player.photoUrl || 'https://via.placeholder.com/50'} sx={{ width: 50, height: 50, mr: 2 }} />
+                                                <Typography variant="h5" component="h2" gutterBottom>
+                                                    {player.name}
+                                                </Typography>
+                                            </Box>
                                             <Box sx={{ mb: 1 }}>
                                                 <Chip
                                                     label={player.role}
@@ -165,6 +227,12 @@ const PlayerList = () => {
                                                 <Chip
                                                     label={player.category}
                                                     color="secondary"
+                                                    size="small"
+                                                    sx={{ mr: 1 }}
+                                                />
+                                                <Chip
+                                                    label={player.status}
+                                                    color={player.status === 'SOLD' ? 'success' : player.status === 'UNSOLD' ? 'warning' : 'default'}
                                                     size="small"
                                                 />
                                             </Box>

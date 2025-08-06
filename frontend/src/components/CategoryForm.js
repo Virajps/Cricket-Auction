@@ -1,27 +1,45 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Paper, Typography, Button, Alert, TextField } from '@mui/material';
+import {
+    Container,
+    Paper,
+    Typography,
+    TextField,
+    Button,
+    Box,
+    Grid,
+    CircularProgress,
+    Alert,
+} from '@mui/material';
+import { useNavigate, useParams } from 'react-router-dom';
 import { categoryService } from '../services/api';
 import { motion } from 'framer-motion';
+
+const formVariants = {
+    hidden: { opacity: 0, y: 40 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, type: 'spring' } }
+};
 
 const CategoryForm = () => {
     const { auctionId, id } = useParams();
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [category, setCategory] = useState({
+    const [formData, setFormData] = useState({
         name: '',
         description: ''
     });
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(false);
 
-    const loadCategory = useCallback(async () => {
+    const fetchCategory = useCallback(async () => {
         try {
             setLoading(true);
-            const data = await categoryService.getById(auctionId, id);
-            setCategory(data);
-        } catch (err) {
+            const response = await categoryService.getById(auctionId, id);
+            setFormData({
+                name: response.name,
+                description: response.description || ''
+            });
+        } catch (error) {
+            console.error('Error fetching category:', error);
             setError('Failed to load category details');
-            console.error(err);
         } finally {
             setLoading(false);
         }
@@ -29,82 +47,108 @@ const CategoryForm = () => {
 
     useEffect(() => {
         if (id) {
-            loadCategory();
+            fetchCategory();
         }
-    }, [id, loadCategory]);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            setLoading(true);
-            setError('');
-            
-            if (id) {
-                await categoryService.update(auctionId, id, category);
-            } else {
-                await categoryService.create(auctionId, category);
-            }
-            
-            navigate(`/auctions/${auctionId}/categories`);
-        } catch (err) {
-            setError('Failed to save category');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
+    }, [id, fetchCategory]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setCategory(prev => ({
+        setFormData(prev => ({
             ...prev,
             [name]: value
         }));
     };
 
-    const formVariants = {
-        hidden: { opacity: 0, y: 40 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.6, type: 'spring' } }
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError(null);
+        setLoading(true);
+
+        try {
+            if (id) {
+                await categoryService.update(auctionId, id, formData);
+            } else {
+                await categoryService.create(auctionId, formData);
+            }
+            navigate(`/auctions/${auctionId}/categories`);
+        } catch (error) {
+            console.error('Error saving category:', error);
+            setError(error.response?.data?.message || 'Failed to save category');
+        } finally {
+            setLoading(false);
+        }
     };
 
+    if (loading) {
+        return (
+            <Container>
+                <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+                    <CircularProgress />
+                </Box>
+            </Container>
+        );
+    }
+
     return (
-        <Container maxWidth="sm">
+        <Container maxWidth="md">
             <motion.div initial="hidden" animate="visible" variants={formVariants}>
                 <Paper elevation={0} sx={{ p: 4, mt: 4, bgcolor: 'background.paper', borderRadius: 2 }}>
-                    <Typography variant="h4" color="primary.main" fontWeight={900} gutterBottom>
-                        {id ? 'Edit Category' : 'Add New Category'}
+                    <Typography variant="h4" component="h1" gutterBottom>
+                        {id ? 'Edit Category' : 'Create New Category'}
                     </Typography>
-                    {error && <Alert severity="error">{error}</Alert>}
+
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {error}
+                        </Alert>
+                    )}
+
                     <form onSubmit={handleSubmit}>
-                        <TextField
-                            label="Name"
-                            name="name"
-                            value={category.name}
-                            onChange={handleChange}
-                            required
-                            fullWidth
-                            margin="normal"
-                        />
-                        <TextField
-                            label="Description"
-                            name="description"
-                            value={category.description}
-                            onChange={handleChange}
-                            fullWidth
-                            margin="normal"
-                            multiline
-                            rows={3}
-                        />
-                        <Button 
-                            className="w-100" 
-                            type="submit" 
-                            variant="contained"
-                            color="primary"
-                            disabled={loading}
-                            sx={{ mt: 2 }}
-                        >
-                            {loading ? 'Saving...' : (id ? 'Update Category' : 'Add Category')}
-                        </Button>
+                        <Grid container spacing={3}>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Category Name"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    required
+                                />
+                            </Grid>
+
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Description"
+                                    name="description"
+                                    value={formData.description}
+                                    onChange={handleChange}
+                                    multiline
+                                    rows={4}
+                                />
+                            </Grid>
+
+                            <Grid item xs={12}>
+                                <Box display="flex" justifyContent="flex-end" gap={2}>
+                                    <Button
+                                        variant="outlined"
+                                        onClick={() => navigate(-1)}
+                                        size="large"
+                                    >
+                                        Back
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        variant="contained"
+                                        color="primary"
+                                        disabled={loading}
+                                        size="large"
+                                    >
+                                        {id ? 'Update' : 'Create'} Category
+                                    </Button>
+                                </Box>
+                            </Grid>
+                        </Grid>
                     </form>
                 </Paper>
             </motion.div>
@@ -112,4 +156,4 @@ const CategoryForm = () => {
     );
 };
 
-export default CategoryForm; 
+export default CategoryForm;

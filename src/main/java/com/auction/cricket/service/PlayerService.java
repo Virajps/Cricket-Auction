@@ -46,6 +46,7 @@ public class PlayerService {
         player.setNationality(request.getNationality());
         player.setBattingStyle(request.getBattingStyle());
         player.setBowlingStyle(request.getBowlingStyle());
+        player.setPhotoUrl(request.getPhotoUrl());
         player.setAuction(auction);
         if (request.getStatus() != null) {
             player.setStatus(PlayerStatus.valueOf(request.getStatus()));
@@ -119,6 +120,7 @@ public class PlayerService {
         player.setNationality(request.getNationality());
         player.setBattingStyle(request.getBattingStyle());
         player.setBowlingStyle(request.getBowlingStyle());
+        player.setPhotoUrl(request.getPhotoUrl());
         if (request.getStatus() != null) {
             player.setStatus(PlayerStatus.valueOf(request.getStatus()));
         }
@@ -137,17 +139,26 @@ public class PlayerService {
         if (!player.getAuction().getId().equals(auctionId)) {
             throw new ResourceNotFoundException("Player not found in auction with id: " + auctionId);
         }
-        player.setStatus(PlayerStatus.valueOf(status));
         if (PlayerStatus.valueOf(status) == PlayerStatus.SOLD) {
-            Team team = teamRepository.findById(teamId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + teamId));
-            player.setTeam(team);
-            player.setCurrentPrice(finalBidAmount);
-            team.setRemainingBudget(team.getRemainingBudget() - finalBidAmount);
-            teamRepository.save(team);
+            if (teamId != null && finalBidAmount != null) {
+                Team team = teamRepository.findById(teamId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + teamId));
+                player.setTeam(team);
+                player.setCurrentPrice(finalBidAmount);
+                player.setStatus(PlayerStatus.SOLD);
+                Double newRemainingBudget = team.getRemainingBudget() - finalBidAmount;
+                if (newRemainingBudget < 0) {
+                    throw new IllegalArgumentException("Insufficient budget for team: " + team.getName());
+                }
+                team.setRemainingBudget(newRemainingBudget);
+                teamRepository.save(team);
+            } else {
+                throw new IllegalArgumentException("Team ID and final bid amount are required for SOLD status.");
+            }
         } else if (PlayerStatus.valueOf(status) == PlayerStatus.UNSOLD) {
             player.setTeam(null);
-            player.setCurrentPrice(player.getBasePrice());
+            player.setStatus(PlayerStatus.UNSOLD);
+
         }
         player = playerRepository.save(player);
         return convertToResponse(player);
@@ -167,6 +178,29 @@ public class PlayerService {
         playerRepository.delete(player);
     }
 
+    @Transactional
+    public void setUnsoldPlayersAvailable(Long auctionId) {
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Auction not found with id: " + auctionId));
+
+        List<Player> unsoldPlayers = playerRepository.findByAuctionAndStatus(auction, PlayerStatus.UNSOLD);
+        for (Player player : unsoldPlayers) {
+            player.setStatus(PlayerStatus.AVAILABLE);
+            playerRepository.save(player);
+        }
+
+        // Also reset players who were SOLD but are now being made available (e.g., if a
+        // team was deleted)
+        List<Player> soldPlayers = playerRepository.findByAuctionAndStatus(auction, PlayerStatus.SOLD);
+        for (Player player : soldPlayers) {
+            if (player.getTeam() == null) { // Only reset if team is null (e.g., team was deleted)
+                player.setStatus(PlayerStatus.AVAILABLE);
+                player.setCurrentPrice(player.getBasePrice());
+                playerRepository.save(player);
+            }
+        }
+    }
+
     private PlayerResponse convertToResponse(Player player) {
         PlayerResponse response = new PlayerResponse();
         response.setId(player.getId());
@@ -184,6 +218,8 @@ public class PlayerService {
         response.setStatus(player.getStatus().name());
         response.setSold(player.getStatus() == PlayerStatus.SOLD);
         response.setUnsold(player.getStatus() == PlayerStatus.UNSOLD);
+        response.setCurrentPrice(player.getCurrentPrice());
+        response.setPhotoUrl(player.getPhotoUrl());
         return response;
     }
 }

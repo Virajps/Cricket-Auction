@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
   "name": "cricket-auction-frontend",
   "version": "0.1.0",
   "private": true,
@@ -21,7 +20,8 @@
     "react-router-dom": "^6.20.1",
     "react-scripts": "5.0.1",
     "sockjs-client": "^1.6.1",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "framer-motion": "^12.23.5"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -48,9 +48,4 @@
     ]
   },
   "proxy": "http://localhost:8080"
-=======
-  "dependencies": {
-    "framer-motion": "^12.23.5"
-  }
->>>>>>> 48dbf58882be02dbabaeb50b3743ee7bd017895f
 }

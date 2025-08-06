@@ -1,15 +1,24 @@
 package com.auction.cricket.controller;
 
-import com.auction.cricket.dto.TeamRequest;
-import com.auction.cricket.dto.TeamResponse;
-import com.auction.cricket.service.TeamService;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.auction.cricket.dto.TeamRequest;
+import com.auction.cricket.dto.TeamResponse;
+import com.auction.cricket.service.TeamService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/auctions/{auctionId}/teams")
@@ -45,10 +54,11 @@ public class TeamController {
 
     @PutMapping("/{id}")
     public ResponseEntity<TeamResponse> updateTeam(
+            @PathVariable Long auctionId,
             @PathVariable Long id,
-            @RequestBody TeamRequest request) {
+            @Valid @RequestBody TeamRequest request) {
         logger.debug("Received request to update team: {}", id);
-        return ResponseEntity.ok(teamService.updateTeam(id, request));
+        return ResponseEntity.ok(teamService.updateTeam(auctionId, id, request));
     }
 
     @DeleteMapping("/{id}")
@@ -69,4 +79,4 @@ public class TeamController {
         logger.debug("Received request to toggle status for team: {}", id);
         return ResponseEntity.ok(teamService.toggleStatus(id));
     }
-} 
+}

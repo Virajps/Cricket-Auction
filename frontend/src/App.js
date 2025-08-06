@@ -8,10 +8,13 @@ import AuctionForm from './components/AuctionForm';
 import AuctionDetails from './components/AuctionDetails';
 import TeamList from './components/TeamList';
 import TeamForm from './components/TeamForm';
+import TeamDetails from './components/TeamDetails';
 import PlayerList from './components/PlayerList';
 import PlayerForm from './components/PlayerForm';
+import PlayerDetails from './components/PlayerDetails';
 import CategoryList from './components/CategoryList';
 import CategoryForm from './components/CategoryForm';
+
 import SponsorList from './components/SponsorList';
 import SponsorForm from './components/SponsorForm';
 import AuctionSettings from './components/AuctionSettings';
@@ -79,6 +82,7 @@ function App() {
                 <TeamForm />
               </ProtectedRoute>
             } />
+            <Route path="/auctions/:auctionId/teams/:id" element={<TeamDetails />} />
             {/* Player routes */}
             <Route path="/auctions/:auctionId/players" element={
               <ProtectedRoute
@@ -104,10 +108,12 @@ function App() {
                 <PlayerForm />
               </ProtectedRoute>
             } />
+            <Route path="/auctions/:auctionId/players/:id" element={<PlayerDetails />} />
             {/* Category routes */}
             <Route path="/auctions/:auctionId/categories" element={<CategoryList />} />
             <Route path="/auctions/:auctionId/categories/new" element={<CategoryForm />} />
             <Route path="/auctions/:auctionId/categories/:id/edit" element={<CategoryForm />} />
+            
             {/* Sponsor routes */}
             <Route path="/auctions/:auctionId/sponsors" element={<SponsorList />} />
             <Route path="/auctions/:auctionId/sponsors/new" element={<SponsorForm />} />

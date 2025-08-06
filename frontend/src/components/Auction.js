@@ -13,7 +13,7 @@ import {
     Avatar
 } from '@mui/material';
 import { motion } from 'framer-motion';
-import { teamService, playerService, updatePlayerStatus, getAvailablePlayers, auctionService } from '../services/api';
+import { teamService, playerService, auctionService } from '../services/api';
 import { webSocketService } from '../services/websocket';
 import { useAuth } from '../contexts/AuthContext';
 import { useParams } from 'react-router-dom';
@@ -42,7 +42,9 @@ const Auction = () => {
     const [showSnackbar, setShowSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
 
-    const lastBid = bids.find(bid => bid.playerId === selectedPlayer?.id);
+    
+    const lastBid = Array.isArray(bids) && bids.find(bid => bid.playerId === selectedPlayer?.id);
+    
     const lastBidTeamId = lastBid?.teamId;
 
     useEffect(() => {
@@ -64,26 +66,38 @@ const Auction = () => {
     };
 
     const handleMarkSold = async () => {
-        if (selectedPlayer && bids.length > 0) {
-            setStatusOverlayText('SOLD');
-            setShowStatusOverlay(true);
-            setSnackbarMessage(`${selectedPlayer.name} marked as SOLD!`);
+        if (!selectedPlayer) {
+            setSnackbarMessage('No player selected.');
             setShowSnackbar(true);
-            await updatePlayerStatus(auctionId, selectedPlayer.id, 'SOLD', lastBidTeamId, lastBid.amount);
-            setTimeout(async () => {
-                setShowStatusOverlay(false);
-                await refreshAvailablePlayers();
-            }, 1500);
+            return;
         }
+
+        if (!lastBid || !lastBid.teamId || typeof lastBid.amount !== 'number' || isNaN(lastBid.amount)) {
+            setSnackbarMessage('Cannot mark as sold: No valid bid or bid amount found for this player.');
+            setShowSnackbar(true);
+            return;
+        }
+
+        setStatusOverlayText('SOLD');
+        setShowStatusOverlay(true);
+        setSnackbarMessage(`${selectedPlayer.name} marked as SOLD!`);
+        setShowSnackbar(true);
+        console.log('Sending update status request with:', { teamId: lastBid.teamId, finalBidAmount: lastBid.amount });
+        await playerService.updateStatus(auctionId, selectedPlayer.id, 'SOLD', lastBid.teamId, lastBid.amount);
+        setTimeout(async () => {
+            setShowStatusOverlay(false);
+            await refreshAvailablePlayers();
+        }, 1500);
     };
 
     const handleMarkUnsold = async () => {
-        if (selectedPlayer && bids.length === 0) {
+        if (selectedPlayer) {
             setStatusOverlayText('UNSOLD');
             setShowStatusOverlay(true);
             setSnackbarMessage(`${selectedPlayer.name} marked as UNSOLD!`);
             setShowSnackbar(true);
-            await updatePlayerStatus(auctionId, selectedPlayer.id, 'UNSOLD');
+            console.log('Marking player as UNSOLD:', selectedPlayer.id);
+            await playerService.updateStatus(auctionId, selectedPlayer.id, 'UNSOLD');
             setTimeout(async () => {
                 setShowStatusOverlay(false);
                 await refreshAvailablePlayers();
@@ -92,8 +106,8 @@ const Auction = () => {
     };
 
     const refreshAvailablePlayers = useCallback(async () => {
-        const players = await getAvailablePlayers(auctionId);
-        setPlayers(players || []);
+        const players = await playerService.getAvailable(auctionId);
+        setPlayers(Array.isArray(players) ? players : []);
         if (!selectedPlayer && players && players.length > 0) {
             setSelectedPlayer(players[0]);
         } else if (selectedPlayer && !players.find(p => p.id === selectedPlayer.id)) {
@@ -114,7 +128,7 @@ const Auction = () => {
                     auctionService.getById(auctionId)
                 ]);
                 if (mounted) {
-                    setPlayers(playersData || []);
+                    setPlayers(Array.isArray(playersData) ? playersData : []);
                     setTeams(teamsData || []);
                     setAuction(auctionData);
                     if (!selectedPlayer && playersData && playersData.length > 0) {
@@ -166,7 +180,7 @@ const Auction = () => {
     };
 
     const handleUndoLastBid = () => {
-        if (bids.length > 0 && selectedPlayer) {
+        if (Array.isArray(bids) && bids.length > 0 && selectedPlayer) {
             const idx = bids.findIndex(bid => bid.playerId === selectedPlayer.id);
             if (idx !== -1) {
                 setBids(bids.filter((_, i) => i !== idx));
@@ -238,8 +252,6 @@ const Auction = () => {
                         <Grid item xs={12} md={4} textAlign="center">
                             <Typography variant="h6" color="text.secondary">Base Price</Typography>
                             <Typography variant="h4" gutterBottom>₹{selectedPlayer.basePrice?.toLocaleString()}</Typography>
-                            <Typography variant="h6" color="text.secondary">Category</Typography>
-                            <Typography variant="h5">{selectedPlayer.category}</Typography>
                         </Grid>
 
                         <Grid item xs={12} md={4} textAlign="center">

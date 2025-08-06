@@ -74,7 +74,9 @@ public class BidService {
         team.setRemainingBudget(team.getRemainingBudget() - request.getAmount());
         team.setPointsUsed(team.getPointsUsed() + request.getAmount().intValue());
         team.setPlayersCount(team.getPlayersCount() + 1);
-        teamRepository.save(team);
+        team = teamRepository.save(team);
+        teamRepository.flush(); // Explicitly flush changes to the database
+        teamRepository.refresh(team); // Refresh the entity from the database
 
         bid = bidRepository.save(bid);
         BidResponse response = convertToResponse(bid);
@@ -86,8 +88,8 @@ public class BidService {
         return response;
     }
 
-    public List<BidResponse> getBidsByPlayer(Long playerId) {
-        return bidRepository.findByPlayerIdOrderByAmountDesc(playerId).stream()
+    public List<BidResponse> getBidsByPlayer(Long auctionId, Long playerId) {
+        return bidRepository.findByPlayerIdAndPlayerAuctionIdOrderByAmountDesc(playerId, auctionId).stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }

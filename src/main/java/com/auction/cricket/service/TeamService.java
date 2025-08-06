@@ -83,16 +83,23 @@ public class TeamService {
         team.setPointsUsed(0);
         team.setPlayersCount(0);
         team.setIsActive(true);
+        team.setLogoUrl(request.getLogoUrl());
 
         team = teamRepository.save(team);
         return mapToResponse(team);
     }
 
     @Transactional
-    public TeamResponse updateTeam(Long id, TeamRequest request) {
+    public TeamResponse updateTeam(Long auctionId, Long id, TeamRequest request) {
         logger.debug("Updating team with id: {} and request: {}", id, request);
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Auction not found with id: " + auctionId));
         Team team = teamRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + id));
+
+        if (!team.getAuction().getId().equals(auctionId)) {
+            throw new ResourceNotFoundException("Team not found in auction with id: " + auctionId);
+        }
         
         // Check if new name already exists in the same auction
         if (!team.getName().equals(request.getName()) && 
@@ -102,6 +109,7 @@ public class TeamService {
         }
         
         team.setName(request.getName());
+        team.setLogoUrl(request.getLogoUrl());
         team = teamRepository.save(team);
         return mapToResponse(team);
     }
@@ -111,6 +119,12 @@ public class TeamService {
         logger.debug("Deleting team with id: {}", id);
         Team team = teamRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + id));
+
+        // Disassociate players from the team
+        team.getPlayers().forEach(player -> player.setTeam(null));
+        // Disassociate bids from the team
+        team.getBids().forEach(bid -> bid.setTeam(null));
+
         teamRepository.delete(team);
     }
 
@@ -151,6 +165,7 @@ public class TeamService {
         response.setPlayersCount(team.getPlayersCount());
         response.setAuctionName(team.getAuction().getName());
         response.setIsActive(team.getIsActive());
+        response.setLogoUrl(team.getLogoUrl());
         return response;
     }
 } 

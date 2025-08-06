@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/bids")
+@RequestMapping("/api/auctions/{auctionId}/players/{playerId}/bids")
 public class BidController {
 
     @Autowired
@@ -26,9 +26,9 @@ public class BidController {
         return ResponseEntity.ok(bidService.placeBid(request, teamId));
     }
 
-    @GetMapping("/player/{playerId}")
-    public ResponseEntity<List<BidResponse>> getBidsByPlayer(@PathVariable Long playerId) {
-        return ResponseEntity.ok(bidService.getBidsByPlayer(playerId));
+    @GetMapping
+    public ResponseEntity<List<BidResponse>> getBidsByPlayer(@PathVariable Long auctionId, @PathVariable Long playerId) {
+        return ResponseEntity.ok(bidService.getBidsByPlayer(auctionId, playerId));
     }
 
     @GetMapping("/team/{teamId}")

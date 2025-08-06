@@ -38,7 +38,7 @@ public class Team {
     @Column(name = "players_count", nullable = false)
     private Integer playersCount;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "auction_id", nullable = false)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Auction auction;
@@ -52,4 +52,7 @@ public class Team {
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
+
+    @Column(name = "logo_url")
+    private String logoUrl;
 } 

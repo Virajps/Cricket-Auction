@@ -18,4 +18,5 @@ public class TeamResponse {
     private String ownerName;
     private Boolean isActive;
     private Long auctionId;
+    private String logoUrl;
 }

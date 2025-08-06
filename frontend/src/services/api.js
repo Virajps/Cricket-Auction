@@ -15,14 +15,10 @@ api.interceptors.request.use(
         const token = localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
-            console.log('Setting Authorization header:', config.headers.Authorization); // Debug log
-        } else {
-            console.log('No token found in localStorage'); // Debug log
         }
         return config;
     },
     (error) => {
-        console.error('Request interceptor error:', error);
         return Promise.reject(error);
     }
 );
@@ -31,15 +27,10 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response) {
-            console.error('API Error:', error.response.data);
-            // Only handle 401 errors if we're not already on the login page
-            if (error.response.status === 401 && !window.location.pathname.includes('/login')) {
-                console.log('Unauthorized access, redirecting to login'); // Debug log
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                window.location.href = '/login';
-            }
+        if (error.response && error.response.status === 401 && !window.location.pathname.includes('/login')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
         }
         return Promise.reject(error);
     }
@@ -47,23 +38,12 @@ api.interceptors.response.use(
 
 export const authService = {
     login: async (credentials) => {
-        try {
-            const response = await api.post('/auth/login', credentials);
-            console.log('Login response:', response.data);
-            return response.data;
-        } catch (error) {
-            console.error('Login API error:', error.response?.data || error.message);
-            throw error;
-        }
+        const response = await api.post('/auth/login', credentials);
+        return response.data;
     },
     register: async (userData) => {
-        try {
-            const response = await api.post('/auth/register', userData);
-            return response.data;
-        } catch (error) {
-            console.error('Registration error:', error);
-            throw error;
-        }
+        const response = await api.post('/auth/register', userData);
+        return response.data;
     },
     logout: () => {
         localStorage.removeItem('token');
@@ -71,13 +51,8 @@ export const authService = {
         delete api.defaults.headers.common['Authorization'];
     },
     getCurrentUser: async () => {
-        try {
-            const response = await api.get('/users/me');
-            return response.data;
-        } catch (error) {
-            console.error('Get current user error:', error);
-            throw error;
-        }
+        const response = await api.get('/users/me');
+        return response.data;
     },
     setAuthToken: (token) => {
         if (token) {
@@ -132,9 +107,22 @@ export const auctionService = {
     toggleStatus: async (id) => {
         const response = await api.put(`/auctions/${id}/toggle-status`);
         return response.data;
+    },
+    setUnsoldPlayersAvailable: async (auctionId) => {
+        const response = await api.patch(`/auctions/${auctionId}/players/set-unsold-available`);
+        return response.data;
+    },
+    uploadLogo: async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await api.post('/upload/image', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
     }
 };
-
 export const teamService = {
     getAll: async () => {
         const response = await api.get('/teams');
@@ -144,16 +132,16 @@ export const teamService = {
         const response = await api.get(`/teams/user/${username}`);
         return response.data;
     },
-    getById: async (id) => {
-        const response = await api.get(`/teams/${id}`);
+    getById: async (id, auctionId) => {
+        const response = await api.get(`auctions/${auctionId}/teams/${id}`);
         return response.data;
     },
     create: async (auctionId, teamData) => {
         const response = await api.post(`/auctions/${auctionId}/teams`, teamData);
         return response.data;
     },
-    update: async (id, teamData) => {
-        const response = await api.put(`/teams/${id}`, teamData);
+    update: async (auctionId, id, teamData) => {
+        const response = await api.put(`auctions/${auctionId}/teams/${id}`, teamData);
         return response.data;
     },
     delete: async (id) => {
@@ -171,20 +159,29 @@ export const teamService = {
     updateBudget: async (id, budget) => {
         const response = await api.put(`/teams/${id}/budget`, { budget });
         return response.data;
+    },
+    uploadLogo: async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await api.post('/upload/image', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
     }
 };
-
 export const playerService = {
-    getAll: async () => {
-        const response = await api.get('/players');
+    getAll: async (auctionId) => {
+        const response = await api.get(`/auctions/${auctionId}/players`);
         return response.data;
     },
     getAvailable: async (auctionId) => {
         const response = await api.get(`/auctions/${auctionId}/players/available`);
         return response.data;
     },
-    getByTeam: async (teamId) => {
-        const response = await api.get(`/teams/${teamId}/players`);
+    getByTeam: async (teamId, auctionId) => {
+        const response = await api.get(`auctions/${auctionId}/players/team/${teamId}`);
         return response.data;
     },
     create: async (auctionId, playerData) => {
@@ -206,9 +203,28 @@ export const playerService = {
     register: async (auctionId, playerData) => {
         const response = await api.post(`/auctions/${auctionId}/players/register`, playerData);
         return response.data;
+    },
+    updateStatus: async (auctionId, playerId, status, teamId = null, finalBidAmount) => {
+        const payload = { status };
+        if (teamId) {
+            payload.teamId = teamId;
+        }
+        payload.finalBidAmount = finalBidAmount;
+        const response = await api.patch(`/auctions/${auctionId}/players/${playerId}/status`, payload);
+        console.log('playerService.updateStatus response:', response.data);
+        return response.data;
+    },
+    uploadPhoto: async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await api.post('/upload/image', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
     }
 };
-
 export const bidService = {
     place: async (auctionId, playerId, bidData) => {
         const response = await api.post(`/auctions/${auctionId}/players/${playerId}/bids`, bidData);
@@ -251,29 +267,6 @@ export const bidRuleService = {
     }
 };
 
-export const categoryService = {
-    getAll: async (auctionId) => {
-        const response = await api.get(`/auctions/${auctionId}/categories`);
-        return response.data;
-    },
-    getById: async (auctionId, id) => {
-        const response = await api.get(`/auctions/${auctionId}/categories/${id}`);
-        return response.data;
-    },
-    create: async (auctionId, categoryData) => {
-        const response = await api.post(`/auctions/${auctionId}/categories`, categoryData);
-        return response.data;
-    },
-    update: async (auctionId, id, categoryData) => {
-        const response = await api.put(`/auctions/${auctionId}/categories/${id}`, categoryData);
-        return response.data;
-    },
-    delete: async (auctionId, id) => {
-        const response = await api.delete(`/auctions/${auctionId}/categories/${id}`);
-        return response.data;
-    }
-};
-
 export const sponsorService = {
     getAll: async (auctionId) => {
         const response = await api.get(`/auctions/${auctionId}/sponsors`);
@@ -297,37 +290,27 @@ export const sponsorService = {
     }
 };
 
-export const updatePlayerStatus = async (auctionId, playerId, status) => {
-  const token = localStorage.getItem('token');
-  const response = await fetch(`/api/auctions/${auctionId}/players/${playerId}/status`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+export const categoryService = {
+    getAll: async (auctionId) => {
+        const response = await api.get(`/auctions/${auctionId}/categories`);
+        return response.data;
     },
-    body: JSON.stringify({ status })
-  });
-  if (!response.ok) throw new Error('Failed to update player status');
-  return response.json();
+    getById: async (auctionId, id) => {
+        const response = await api.get(`/auctions/${auctionId}/categories/${id}`);
+        return response.data;
+    },
+    create: async (auctionId, categoryData) => {
+        const response = await api.post(`/auctions/${auctionId}/categories`, categoryData);
+        return response.data;
+    },
+    update: async (auctionId, id, categoryData) => {
+        const response = await api.put(`/auctions/${auctionId}/categories/${id}`, categoryData);
+        return response.data;
+    },
+    delete: async (auctionId, id) => {
+        const response = await api.delete(`/auctions/${auctionId}/categories/${id}`);
+        return response.data;
+    }
 };
 
-export const getAvailablePlayers = async (auctionId) => {
-  const token = localStorage.getItem('token');
-  const response = await fetch(`/api/auctions/${auctionId}/players/available`, {
-    headers: {
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-    },
-  });
-  if (!response.ok) throw new Error('Failed to fetch available players');
-  return response.json();
-};
-
-// Team endpoints
-export const getTeamsByAuction = (auctionId) => api.get(`/auctions/${auctionId}/teams`);
-export const createTeam = (auctionId, data) => api.post(`/auctions/${auctionId}/teams`, data);
-export const updateTeam = (id, data) => api.put(`/teams/${id}`, data);
-export const deleteTeam = (id) => api.delete(`/teams/${id}`);
-export const getTeamById = (id) => api.get(`/teams/${id}`);
-export const getTeamByUsername = (username) => api.get(`/teams/user/${username}`);
-export const updateTeamBudget = (id, budget) => api.put(`/teams/${id}/budget`, budget);
-export const toggleTeamStatus = (id) => api.put(`/teams/${id}/toggle-status`); 
+export default api;

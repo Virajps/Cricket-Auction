@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.auction.cricket.dto.PlayerRequest;
 import com.auction.cricket.dto.PlayerResponse;
+import com.auction.cricket.dto.UpdatePlayerStatusRequest;
 import com.auction.cricket.service.PlayerService;
 
 import jakarta.validation.Valid;
@@ -73,11 +74,10 @@ public class PlayerController {
     public ResponseEntity<PlayerResponse> updatePlayerStatus(
             @PathVariable Long auctionId,
             @PathVariable Long playerId,
-            @RequestBody PlayerRequest request,
-            @PathVariable Long teamId,
-            @PathVariable Double finalBidAmount) {
+            @RequestBody UpdatePlayerStatusRequest request) {
         return ResponseEntity
-                .ok(playerService.updatePlayerStatus(auctionId, playerId, request.getStatus(), teamId, finalBidAmount));
+                .ok(playerService.updatePlayerStatus(auctionId, playerId, request.getStatus(), request.getTeamId(),
+                        request.getFinalBidAmount()));
     }
 
     @GetMapping("/team/{teamId}")
@@ -85,5 +85,11 @@ public class PlayerController {
             @PathVariable Long auctionId,
             @PathVariable Long teamId) {
         return ResponseEntity.ok(playerService.getPlayersByTeam(auctionId, teamId));
+    }
+
+    @PatchMapping("/set-unsold-available")
+    public ResponseEntity<Void> setUnsoldPlayersAvailable(@PathVariable Long auctionId) {
+        playerService.setUnsoldPlayersAvailable(auctionId);
+        return ResponseEntity.ok().build();
     }
 }
