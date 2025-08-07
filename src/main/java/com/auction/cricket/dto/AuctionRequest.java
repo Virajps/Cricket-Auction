@@ -32,6 +32,10 @@ public class AuctionRequest {
     @Min(value = 1, message = "Bid increase must be at least 1")
     private Double bidIncreaseBy;
 
+    @NotNull(message = "Base price is required")
+    @Min(value = 0, message = "Base price must be positive")
+    private Double basePrice;
+
     @NotNull(message = "Players per team is required")
     @Min(value = 1, message = "Players per team must be at least 1")
     private Integer playersPerTeam;

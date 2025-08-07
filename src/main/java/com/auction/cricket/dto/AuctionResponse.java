@@ -15,6 +15,7 @@ public class AuctionResponse {
     private Integer totalTeams;
     private Double minimumBid;
     private Double bidIncreaseBy;
+    private Double basePrice;
     private Integer playersPerTeam;
     private Boolean isActive;
     private String createdBy;

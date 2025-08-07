@@ -10,7 +10,8 @@ import {
     TextField,
     Button,
     Snackbar,
-    Avatar
+    Avatar,
+    Modal
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { teamService, playerService, auctionService } from '../services/api';
@@ -41,6 +42,7 @@ const Auction = () => {
     const [statusOverlayText, setStatusOverlayText] = useState('');
     const [showSnackbar, setShowSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [showPhotoModal, setShowPhotoModal] = useState(false);
 
     
     const lastBid = Array.isArray(bids) && bids.find(bid => bid.playerId === selectedPlayer?.id);
@@ -84,6 +86,7 @@ const Auction = () => {
         setShowSnackbar(true);
         console.log('Sending update status request with:', { teamId: lastBid.teamId, finalBidAmount: lastBid.amount });
         await playerService.updateStatus(auctionId, selectedPlayer.id, 'SOLD', lastBid.teamId, lastBid.amount);
+        setBids([]);
         setTimeout(async () => {
             setShowStatusOverlay(false);
             await refreshAvailablePlayers();
@@ -98,6 +101,7 @@ const Auction = () => {
             setShowSnackbar(true);
             console.log('Marking player as UNSOLD:', selectedPlayer.id);
             await playerService.updateStatus(auctionId, selectedPlayer.id, 'UNSOLD');
+            setBids([]);
             setTimeout(async () => {
                 setShowStatusOverlay(false);
                 await refreshAvailablePlayers();
@@ -143,13 +147,28 @@ const Auction = () => {
             }
         };
 
+        fetchData();
+
+        return () => {
+            mounted = false;
+        };
+    }, [auctionId]);
+
+    useEffect(() => {
+        let mounted = true;
+
         const initializeWebSocket = () => {
             try {
                 webSocketService.connect();
                 webSocketService.subscribeToBids((bid) => {
                     if (mounted) {
                         setBids((prevBids) => [bid, ...prevBids]);
-                        fetchData();
+                        if (selectedPlayer && bid.playerId === selectedPlayer.id) {
+                            setSelectedPlayer(prevPlayer => ({
+                                ...prevPlayer,
+                                currentPrice: bid.amount
+                            }));
+                        }
                     }
                 });
                 const interval = setInterval(() => {
@@ -162,7 +181,6 @@ const Auction = () => {
             }
         };
 
-        fetchData();
         const cleanupInterval = initializeWebSocket();
 
         return () => {
@@ -243,7 +261,12 @@ const Auction = () => {
                 <Card elevation={3} sx={{ p: 4 }}>
                     <Grid container spacing={4} alignItems="center">
                         <Grid item xs={12} md={4} textAlign="center">
-                            <Avatar src={selectedPlayer.photoUrl || 'https://via.placeholder.com/180'} alt={selectedPlayer.name} sx={{ width: 180, height: 180, mx: 'auto', mb: 2 }} />
+                            <Avatar 
+                                src={selectedPlayer.photoUrl || 'https://via.placeholder.com/250'} 
+                                alt={selectedPlayer.name} 
+                                sx={{ width: 250, height: 250, mx: 'auto', mb: 2, cursor: 'pointer' }} 
+                                onClick={() => setShowPhotoModal(true)}
+                            />
                             <Typography variant="h4" component="h2">{selectedPlayer.name}</Typography>
                             <Typography variant="h6" color="text.secondary">{selectedPlayer.role}</Typography>
                             <Typography variant="body1" color="text.secondary">{selectedPlayer.nationality}</Typography>
@@ -251,7 +274,7 @@ const Auction = () => {
 
                         <Grid item xs={12} md={4} textAlign="center">
                             <Typography variant="h6" color="text.secondary">Base Price</Typography>
-                            <Typography variant="h4" gutterBottom>₹{selectedPlayer.basePrice?.toLocaleString()}</Typography>
+                            <Typography variant="h4" gutterBottom>₹{auction.basePrice?.toLocaleString()}</Typography>
                         </Grid>
 
                         <Grid item xs={12} md={4} textAlign="center">
@@ -317,6 +340,28 @@ const Auction = () => {
                 message={snackbarMessage}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
             />
+
+            {/* Photo Modal */}
+            <Modal
+                open={showPhotoModal}
+                onClose={() => setShowPhotoModal(false)}
+                aria-labelledby="player-photo-modal-title"
+                aria-describedby="player-photo-modal-description"
+            >
+                <Box 
+                    sx={{ 
+                        position: 'absolute', 
+                        top: '50%', 
+                        left: '50%', 
+                        transform: 'translate(-50%, -50%)', 
+                        bgcolor: 'background.paper', 
+                        boxShadow: 24, 
+                        p: 4 
+                    }}
+                >
+                    <img src={selectedPlayer?.photoUrl} alt={selectedPlayer?.name} style={{ maxWidth: '90vw', maxHeight: '90vh' }} />
+                </Box>
+            </Modal>
         </Container>
     );
 };

@@ -1,21 +1,21 @@
 package com.auction.cricket.service;
 
-import com.auction.cricket.dto.TeamRequest;
-import com.auction.cricket.dto.TeamResponse;
-import com.auction.cricket.entity.Auction;
-import com.auction.cricket.entity.Team;
-import com.auction.cricket.entity.User;
-import com.auction.cricket.exception.ResourceNotFoundException;
-import com.auction.cricket.repository.AuctionRepository;
-import com.auction.cricket.repository.TeamRepository;
-import com.auction.cricket.repository.UserRepository;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import com.auction.cricket.dto.TeamRequest;
+import com.auction.cricket.dto.TeamResponse;
+import com.auction.cricket.entity.Auction;
+import com.auction.cricket.entity.Team;
+import com.auction.cricket.exception.ResourceNotFoundException;
+import com.auction.cricket.repository.AuctionRepository;
+import com.auction.cricket.repository.TeamRepository;
+import com.auction.cricket.repository.UserRepository;
 
 @Service
 public class TeamService {
@@ -25,7 +25,8 @@ public class TeamService {
     private final UserRepository userRepository;
     private final AuctionRepository auctionRepository;
 
-    public TeamService(TeamRepository teamRepository, UserRepository userRepository, AuctionRepository auctionRepository) {
+    public TeamService(TeamRepository teamRepository, UserRepository userRepository,
+            AuctionRepository auctionRepository) {
         this.teamRepository = teamRepository;
         this.userRepository = userRepository;
         this.auctionRepository = auctionRepository;
@@ -80,8 +81,7 @@ public class TeamService {
         team.setAuction(auction);
         team.setBudgetAmount(auction.getPointsPerTeam().doubleValue());
         team.setRemainingBudget(auction.getPointsPerTeam().doubleValue());
-        team.setPointsUsed(0);
-        team.setPlayersCount(0);
+
         team.setIsActive(true);
         team.setLogoUrl(request.getLogoUrl());
 
@@ -100,14 +100,14 @@ public class TeamService {
         if (!team.getAuction().getId().equals(auctionId)) {
             throw new ResourceNotFoundException("Team not found in auction with id: " + auctionId);
         }
-        
+
         // Check if new name already exists in the same auction
-        if (!team.getName().equals(request.getName()) && 
-            teamRepository.findByAuction(team.getAuction()).stream()
-                .anyMatch(t -> t.getName().equals(request.getName()))) {
+        if (!team.getName().equals(request.getName()) &&
+                teamRepository.findByAuction(team.getAuction()).stream()
+                        .anyMatch(t -> t.getName().equals(request.getName()))) {
             throw new RuntimeException("Team name already exists in this auction");
         }
-        
+
         team.setName(request.getName());
         team.setLogoUrl(request.getLogoUrl());
         team = teamRepository.save(team);
@@ -133,7 +133,7 @@ public class TeamService {
         logger.debug("Updating budget for team id: {} to: {}", id, budget);
         Team team = teamRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + id));
-        
+
         if (budget < 0) {
             throw new RuntimeException("Budget cannot be negative");
         }
@@ -149,7 +149,7 @@ public class TeamService {
         logger.debug("Toggling status for team with id: {}", id);
         Team team = teamRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + id));
-        
+
         team.setIsActive(!team.getIsActive());
         team = teamRepository.save(team);
         return mapToResponse(team);
@@ -168,4 +168,4 @@ public class TeamService {
         response.setLogoUrl(team.getLogoUrl());
         return response;
     }
-} 
+}

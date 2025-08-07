@@ -40,8 +40,7 @@ public class PlayerService {
         player.setName(request.getName());
         player.setAge(request.getAge());
         player.setRole(request.getRole());
-        player.setBasePrice(request.getBasePrice());
-        player.setCurrentPrice(request.getBasePrice());
+        player.setCurrentPrice(auction.getBasePrice());
         player.setCategory(request.getCategory());
         player.setNationality(request.getNationality());
         player.setBattingStyle(request.getBattingStyle());
@@ -115,7 +114,6 @@ public class PlayerService {
         player.setName(request.getName());
         player.setAge(request.getAge());
         player.setRole(request.getRole());
-        player.setBasePrice(request.getBasePrice());
         player.setCategory(request.getCategory());
         player.setNationality(request.getNationality());
         player.setBattingStyle(request.getBattingStyle());
@@ -195,7 +193,7 @@ public class PlayerService {
         for (Player player : soldPlayers) {
             if (player.getTeam() == null) { // Only reset if team is null (e.g., team was deleted)
                 player.setStatus(PlayerStatus.AVAILABLE);
-                player.setCurrentPrice(player.getBasePrice());
+                player.setCurrentPrice(auction.getBasePrice());
                 playerRepository.save(player);
             }
         }
@@ -207,7 +205,6 @@ public class PlayerService {
         response.setName(player.getName());
         response.setAge(player.getAge());
         response.setRole(player.getRole());
-        response.setBasePrice(player.getBasePrice());
         response.setCategory(player.getCategory());
         response.setNationality(player.getNationality());
         response.setBattingStyle(player.getBattingStyle());

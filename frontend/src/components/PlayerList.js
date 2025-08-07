@@ -22,6 +22,8 @@ import {
     FormControl,
     InputLabel,
     Avatar,
+    Pagination,
+    TextField,
 } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -52,13 +54,23 @@ const PlayerList = () => {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [playerToDelete, setPlayerToDelete] = useState(null);
     const [statusFilter, setStatusFilter] = useState('ALL');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [playersPerPage] = useState(9);
 
     const filteredPlayers = players.filter(player => {
-        if (statusFilter === 'ALL') {
-            return true;
-        }
-        return player.status === statusFilter;
+        const statusMatch = statusFilter === 'ALL' || player.status === statusFilter;
+        const nameMatch = player.name.toLowerCase().includes(searchQuery.toLowerCase());
+        return statusMatch && nameMatch;
     });
+
+    const indexOfLastPlayer = currentPage * playersPerPage;
+    const indexOfFirstPlayer = indexOfLastPlayer - playersPerPage;
+    const currentPlayers = filteredPlayers.slice(indexOfFirstPlayer, indexOfLastPlayer);
+
+    const handlePageChange = (event, value) => {
+        setCurrentPage(value);
+    };
 
     const fetchAuction = useCallback(async () => {
         try {
@@ -148,8 +160,16 @@ const PlayerList = () => {
         <Container maxWidth="lg" sx={{ py: 4 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
                 <Typography variant="h2" component="h1">
-                    Players
+                    Players ({filteredPlayers.length})
                 </Typography>
+                <TextField
+                    label="Search by Name"
+                    variant="outlined"
+                    size="small"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    sx={{ minWidth: 250, mr: 2 }}
+                />
                 <Box sx={{ display: 'flex', gap: 2 }}>
                     <FormControl sx={{ minWidth: 120 }}>
                         <InputLabel id="status-filter-label">Status</InputLabel>
@@ -177,7 +197,7 @@ const PlayerList = () => {
                     )}
                     <Button
                         variant="outlined"
-                        onClick={() => navigate(-1)}
+                        onClick={() => navigate(`/auctions/${auctionId}`)}
                     >
                         Back
                     </Button>
@@ -199,8 +219,8 @@ const PlayerList = () => {
             )}
             <Grid container spacing={3}>
                 <AnimatePresence>
-                    {filteredPlayers.length > 0 ? (
-                        filteredPlayers.map((player, i) => (
+                    {currentPlayers.length > 0 ? (
+                        currentPlayers.map((player, i) => (
                             <Grid item xs={12} sm={6} md={4} key={player.id}>
                                 <motion.div
                                     initial="hidden"
@@ -239,9 +259,7 @@ const PlayerList = () => {
                                             <Typography variant="body2" color="text.secondary" gutterBottom>
                                                 Age: {player.age} | {player.nationality}
                                             </Typography>
-                                            <Typography variant="body2" color="text.secondary" gutterBottom>
-                                                Base Price: ₹{player.basePrice}
-                                            </Typography>
+                                            
                                             {player.battingStyle && (
                                                 <Typography variant="body2" color="text.secondary" gutterBottom>
                                                     Batting: {player.battingStyle}
@@ -291,6 +309,14 @@ const PlayerList = () => {
                     )}
                 </AnimatePresence>
             </Grid>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                <Pagination
+                    count={Math.ceil(filteredPlayers.length / playersPerPage)}
+                    page={currentPage}
+                    onChange={handlePageChange}
+                    color="primary"
+                />
+            </Box>
             <Dialog
                 open={deleteDialogOpen}
                 onClose={handleDeleteCancel}

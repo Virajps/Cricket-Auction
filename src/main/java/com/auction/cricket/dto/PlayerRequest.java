@@ -17,10 +17,6 @@ public class PlayerRequest {
     @NotBlank(message = "Role is required")
     private String role;
 
-    @NotNull(message = "Base price is required")
-    @Min(value = 0, message = "Base price must be positive")
-    private Double basePrice;
-
     @NotBlank(message = "Category is required")
     private String category;
 

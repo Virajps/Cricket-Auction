@@ -41,6 +41,9 @@ public class Auction {
     @Column(name = "bid_increase_by", nullable = false)
     private Double bidIncreaseBy;
 
+    @Column(name = "base_price", nullable = false)
+    private Double basePrice;
+
     @Column(name = "players_per_team", nullable = false)
     private Integer playersPerTeam;
 

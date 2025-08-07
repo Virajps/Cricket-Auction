@@ -160,7 +160,7 @@ const TeamList = () => {
                 </Button>
                 <Button
                     variant="outlined"
-                    onClick={() => navigate(-1)}
+                    onClick={() => navigate(`/auctions/${auctionId}`)}
                 >
                     Back
                 </Button>

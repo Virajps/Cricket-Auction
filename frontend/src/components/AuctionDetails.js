@@ -109,7 +109,7 @@ const AuctionDetails = () => {
                             variant="outlined"
                             color="primary"
                             sx={{ mr: 2 }}
-                            onClick={() => navigate(-1)}
+                            onClick={() => navigate(`/auctions`)}
                         >
                             Back
                         </Button>

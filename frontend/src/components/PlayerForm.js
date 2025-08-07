@@ -27,7 +27,6 @@ const PlayerForm = () => {
         name: '',
         age: '',
         role: '',
-        basePrice: '',
         category: '',
         nationality: '',
         battingStyle: '',
@@ -315,33 +314,6 @@ const PlayerForm = () => {
                                         </MenuItem>
                                     ))}
                                 </TextField>
-                            </Grid>
-                            <Grid item xs={12} sm={6}>
-                                <TextField
-                                    fullWidth
-                                    label="Base Price"
-                                    name="basePrice"
-                                    type="number"
-                                    value={formData.basePrice}
-                                    onChange={handleChange}
-                                    required
-                                    variant="outlined"
-                                    inputProps={{ min: auction?.minimumBid || 0, step: 0.01 }}
-                                    helperText={`Minimum base price: ₹${auction?.minimumBid || 0}`}
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            '& fieldset': {
-                                                borderColor: '#ced4da',
-                                            },
-                                            '&:hover fieldset': {
-                                                borderColor: '#007BFF',
-                                            },
-                                            '&.Mui-focused fieldset': {
-                                                borderColor: '#007BFF',
-                                            },
-                                        },
-                                    }}
-                                />
                             </Grid>
 
                             <Grid item xs={12} sm={6}>

@@ -56,6 +56,7 @@ public class AuctionService {
         auction.setTotalTeams(request.getTotalTeams());
         auction.setMinimumBid(request.getMinimumBid());
         auction.setBidIncreaseBy(request.getBidIncreaseBy());
+        auction.setBasePrice(request.getBasePrice());
         auction.setPlayersPerTeam(request.getPlayersPerTeam());
         auction.setCreatedBy(user);
         auction.setIsActive(true);
@@ -133,6 +134,7 @@ public class AuctionService {
         auction.setTotalTeams(request.getTotalTeams());
         auction.setMinimumBid(request.getMinimumBid());
         auction.setBidIncreaseBy(request.getBidIncreaseBy());
+        auction.setBasePrice(request.getBasePrice());
         auction.setPlayersPerTeam(request.getPlayersPerTeam());
 
         auction = auctionRepository.save(auction);
@@ -181,6 +183,7 @@ public class AuctionService {
         response.setTotalTeams(auction.getTotalTeams());
         response.setMinimumBid(auction.getMinimumBid());
         response.setBidIncreaseBy(auction.getBidIncreaseBy());
+        response.setBasePrice(auction.getBasePrice());
         response.setPlayersPerTeam(auction.getPlayersPerTeam());
         response.setIsActive(auction.getIsActive());
         response.setPlayerRegistrationEnabled(auction.getPlayerRegistrationEnabled());

@@ -8,7 +8,6 @@ public class PlayerResponse {
     private String name;
     private Integer age;
     private String role;
-    private Double basePrice;
     private String category;
     private String nationality;
     private String battingStyle;

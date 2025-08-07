@@ -35,6 +35,7 @@ const AuctionForm = () => {
         totalTeams: 0,
         minimumBid: 0,
         bidIncreaseBy: 0,
+        basePrice: 0,
         playersPerTeam: 0,
         isActive: false,
         playerRegistrationEnabled: false
@@ -64,7 +65,8 @@ const AuctionForm = () => {
                 bidIncreaseBy: auction.bidIncreaseBy,
                 playersPerTeam: auction.playersPerTeam,
                 isActive: auction.isActive,
-                playerRegistrationEnabled: auction.playerRegistrationEnabled
+                playerRegistrationEnabled: auction.playerRegistrationEnabled,
+                basePrice: auction.basePrice
             });
         } catch (error) {
             console.error('Error fetching auction:', error);
@@ -280,6 +282,19 @@ const AuctionForm = () => {
                                     onChange={handleChange}
                                     required
                                     inputProps={{ min: 0.01, step: 0.01 }}
+                                />
+                            </Grid>
+
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Base Price"
+                                    name="basePrice"
+                                    type="number"
+                                    value={formData.basePrice}
+                                    onChange={handleChange}
+                                    required
+                                    inputProps={{ min: 0, step: 0.01 }}
                                 />
                             </Grid>
 
