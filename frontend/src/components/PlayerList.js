@@ -25,12 +25,13 @@ import {
     Pagination,
     TextField,
 } from '@mui/material';
-import { Delete as DeleteIcon } from '@mui/icons-material';
+import { Delete as DeleteIcon, Search as SearchIcon, Loop as LoopIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { playerService, auctionService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import ErrorMessage, { MessageType } from './common/ErrorMessage';
+import PlayerDetailsCard from './PlayerDetailsCard';
 
 
 
@@ -55,8 +56,11 @@ const PlayerList = () => {
     const [playerToDelete, setPlayerToDelete] = useState(null);
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [searchQuery, setSearchQuery] = useState('');
+    const [showSearchBar, setShowSearchBar] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [playersPerPage] = useState(9);
+    const [playerDetailsDialogOpen, setPlayerDetailsDialogOpen] = useState(false);
+    const [selectedPlayer, setSelectedPlayer] = useState(null);
 
     const filteredPlayers = players.filter(player => {
         const statusMatch = statusFilter === 'ALL' || player.status === statusFilter;
@@ -148,6 +152,16 @@ const PlayerList = () => {
         }
     };
 
+    const handlePlayerCardClick = (player) => {
+        setSelectedPlayer(player);
+        setPlayerDetailsDialogOpen(true);
+    };
+
+    const handleClosePlayerDetails = () => {
+        setPlayerDetailsDialogOpen(false);
+        setSelectedPlayer(null);
+    };
+
     if (loading) {
         return (
             <Container sx={{ py: 8, display: 'flex', justifyContent: 'center' }}>
@@ -162,15 +176,22 @@ const PlayerList = () => {
                 <Typography variant="h2" component="h1">
                     Players ({filteredPlayers.length})
                 </Typography>
-                <TextField
-                    label="Search by Name"
-                    variant="outlined"
-                    size="small"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    sx={{ minWidth: 250, mr: 2 }}
-                />
-                <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    {showSearchBar && (
+                        <TextField
+                            label="Search by Name"
+                            variant="outlined"
+                            size="small"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            sx={{ minWidth: 250, mr: 2 }}
+                        />
+                    )}
+                    <Tooltip title="Search Players">
+                        <IconButton onClick={() => setShowSearchBar(!showSearchBar)}>
+                            <SearchIcon />
+                        </IconButton>
+                    </Tooltip>
                     <FormControl sx={{ minWidth: 120 }}>
                         <InputLabel id="status-filter-label">Status</InputLabel>
                         <Select
@@ -202,13 +223,14 @@ const PlayerList = () => {
                         Back
                     </Button>
                     {(user?.role === 'ADMIN' || user?.username === auction?.createdBy) && (
-                        <Button
-                            variant="outlined"
-                            color="info"
-                            onClick={handleSetUnsoldAvailable}
-                        >
-                            Set All Unsold Players Available
-                        </Button>
+                        <Tooltip title="Set All Unsold Players Available">
+                            <IconButton
+                                color="info"
+                                onClick={handleSetUnsoldAvailable}
+                            >
+                                <LoopIcon />
+                            </IconButton>
+                        </Tooltip>
                     )}
                 </Box>
             </Box>
@@ -229,7 +251,7 @@ const PlayerList = () => {
                                     variants={cardVariants}
                                     custom={i}
                                 >
-                                    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', cursor: 'pointer' }} onClick={() => handlePlayerCardClick(player)}>
                                         <CardContent sx={{ flexGrow: 1 }}>
                                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                                                 <Avatar src={player.photoUrl || 'https://via.placeholder.com/50'} sx={{ width: 50, height: 50, mr: 2 }} />
@@ -334,6 +356,11 @@ const PlayerList = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+            <PlayerDetailsCard
+                open={playerDetailsDialogOpen}
+                handleClose={handleClosePlayerDetails}
+                player={selectedPlayer}
+            />
         </Container>
     );
 };

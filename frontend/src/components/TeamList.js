@@ -28,8 +28,9 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { teamService, auctionService } from '../services/api';
+import { teamService, auctionService, playerService } from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
+import TeamDetailsCard from './TeamDetailsCard';
 
 const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -48,6 +49,9 @@ const TeamList = () => {
     const [error, setError] = useState(null);
     const navigate = useNavigate();
     const { user } = useAuth();
+    const [teamDetailsDialogOpen, setTeamDetailsDialogOpen] = useState(false);
+    const [selectedTeam, setSelectedTeam] = useState(null);
+    const [selectedTeamPlayers, setSelectedTeamPlayers] = useState([]);
 
         const fetchData = useCallback(async () => {
         try {
@@ -92,6 +96,24 @@ const TeamList = () => {
             console.error('Error toggling status:', err);
             setError(err.response?.data?.message || 'Failed to toggle status');
         }
+    };
+
+    const handleOpenTeamDetails = async (team) => {
+        try {
+            const players = await playerService.getByTeam(team.id, auctionId);
+            setSelectedTeam(team);
+            setSelectedTeamPlayers(players);
+            setTeamDetailsDialogOpen(true);
+        } catch (error) {
+            console.error('Error fetching team players:', error);
+            setError('Failed to load team players.');
+        }
+    };
+
+    const handleCloseTeamDetails = () => {
+        setTeamDetailsDialogOpen(false);
+        setSelectedTeam(null);
+        setSelectedTeamPlayers([]);
     };
 
     const formatCurrency = (amount) => {
@@ -236,7 +258,7 @@ const TeamList = () => {
                                                 size="small"
                                                 variant="contained"
                                                 color="primary"
-                                                onClick={() => navigate(`/auctions/${auctionId}/teams/${team.id}`)}
+                                                onClick={() => handleOpenTeamDetails(team)}
                                             >
                                                 View Details
                                             </Button>
@@ -278,6 +300,12 @@ const TeamList = () => {
                     </AnimatePresence>
                 </Grid>
             )}
+            <TeamDetailsCard
+                open={teamDetailsDialogOpen}
+                handleClose={handleCloseTeamDetails}
+                team={selectedTeam}
+                players={selectedTeamPlayers}
+            />
         </Container>
     );
 };

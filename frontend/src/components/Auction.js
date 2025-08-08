@@ -17,7 +17,7 @@ import { motion } from 'framer-motion';
 import { teamService, playerService, auctionService } from '../services/api';
 import { webSocketService } from '../services/websocket';
 import { useAuth } from '../contexts/AuthContext';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Autocomplete from '@mui/material/Autocomplete';
 
 
@@ -29,6 +29,7 @@ const Auction = () => {
     // eslint-disable-next-line no-unused-vars
     // eslint-disable-next-line no-unused-vars
     const { user } = useAuth(); // eslint-disable-next-line no-unused-vars
+    const navigate = useNavigate();
     const [players, setPlayers] = useState([]);
     const [bids, setBids] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -233,6 +234,7 @@ const Auction = () => {
                 <Typography variant="h5" component="h1">
                     {auction?.name}
                 </Typography>
+                
             </Box>
 
             {/* Player Search and Actions */}
@@ -253,6 +255,9 @@ const Auction = () => {
                 />
                 <Button variant="outlined" color="secondary" onClick={handleUndoLastBid} disabled={bids.length === 0 || !selectedPlayer}>
                     Undo Last Bid
+                </Button>
+                <Button variant="outlined" onClick={() => navigate(-1)} sx={{ ml: 2 }}>
+                    Back
                 </Button>
             </Box>
 
