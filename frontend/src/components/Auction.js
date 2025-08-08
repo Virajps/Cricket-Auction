@@ -225,18 +225,18 @@ const Auction = () => {
     const lastBidTeam = teams.find(team => team.id === lastBid?.teamId);
 
     return (
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-            <Box textAlign="center" mb={4}>
+        <Container maxWidth="lg" sx={{ py: 2 }}>
+                        <Box display="flex" alignItems="center" justifyContent="center" mb={0}>
                 {auction?.logoUrl && (
-                    <Avatar src={auction.logoUrl} alt={auction.name} sx={{ width: 100, height: 100, mx: 'auto', mb: 2 }} />
+                    <Avatar src={auction.logoUrl} alt={auction.name} sx={{ width: 60, height: 60, mr: 2 }} />
                 )}
-                <Typography variant="h2" component="h1">
+                <Typography variant="h5" component="h1">
                     {auction?.name}
                 </Typography>
             </Box>
 
             {/* Player Search and Actions */}
-            <Box display="flex" justifyContent="center" gap={2} mb={4} flexWrap="wrap">
+            <Box display="flex" justifyContent="center" gap={2} mt={2} mb={1} flexWrap="wrap">
                 <Button variant="contained" color="secondary" onClick={handleRandomPlayer} disabled={players.length === 0}>
                     New Random Player
                 </Button>
@@ -258,13 +258,13 @@ const Auction = () => {
 
             {/* Selected Player Details and Bidding */}
             {selectedPlayer && (
-                <Card elevation={3} sx={{ p: 4 }}>
-                    <Grid container spacing={4} alignItems="center">
+                <Card elevation={3} sx={{ p: 2 }}>
+                    <Grid container spacing={0} alignItems="center">
                         <Grid item xs={12} md={4} textAlign="center">
                             <Avatar 
                                 src={selectedPlayer.photoUrl || 'https://via.placeholder.com/250'} 
                                 alt={selectedPlayer.name} 
-                                sx={{ width: 250, height: 250, mx: 'auto', mb: 2, cursor: 'pointer' }} 
+                                sx={{ width: 300, height: 300, mx: 'auto', mb: 2, cursor: 'pointer' }} 
                                 onClick={() => setShowPhotoModal(true)}
                             />
                             <Typography variant="h4" component="h2">{selectedPlayer.name}</Typography>
@@ -272,25 +272,28 @@ const Auction = () => {
                             <Typography variant="body1" color="text.secondary">{selectedPlayer.nationality}</Typography>
                         </Grid>
 
-                        <Grid item xs={12} md={4} textAlign="center">
-                            <Typography variant="h6" color="text.secondary">Base Price</Typography>
-                            <Typography variant="h4" gutterBottom>₹{auction.basePrice?.toLocaleString()}</Typography>
-                        </Grid>
-
-                        <Grid item xs={12} md={4} textAlign="center">
-                            <Typography variant="h6" color="text.secondary">Current Bid</Typography>
-                            <Typography variant="h3" color="primary" gutterBottom>₹{(selectedPlayer.currentPrice || selectedPlayer.basePrice)?.toLocaleString()}</Typography>
-                            {lastBidTeam && (
-                                <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
-                                    <Avatar src={lastBidTeam.logoUrl} alt={lastBidTeam.name} sx={{ width: 32, height: 32 }} />
-                                    <Typography variant="h6">{lastBidTeam.name}</Typography>
+                        <Grid item xs={12} md={8} textAlign="center">
+                            <Box display="flex" justifyContent="space-around" alignItems="center" height="100%">
+                                <Box display="flex" flexDirection="column" alignItems="center">
+                                    <Typography variant="h6" color="text.secondary">Base Price</Typography>
+                                    <Typography variant="h4">₹{auction.basePrice?.toLocaleString()}</Typography>
                                 </Box>
-                            )}
-                            {!lastBidTeam && <Typography variant="body2" color="text.secondary">No bids yet</Typography>}
+                                <Box display="flex" flexDirection="column" alignItems="center">
+                                    <Typography variant="h6" color="text.secondary">Current Bid</Typography>
+                                    <Typography variant="h3" color="primary">₹{(selectedPlayer.currentPrice || selectedPlayer.basePrice)?.toLocaleString()}</Typography>
+                                    {lastBidTeam && (
+                                        <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
+                                            <Avatar src={lastBidTeam.logoUrl} alt={lastBidTeam.name} sx={{ width: 32, height: 32 }} />
+                                            <Typography variant="h6">{lastBidTeam.name}</Typography>
+                                        </Box>
+                                    )}
+                                    {!lastBidTeam && <Typography variant="body2" color="text.secondary">No bids yet</Typography>}
+                                </Box>
+                            </Box>
                         </Grid>
                     </Grid>
 
-                    <Box mt={4} textAlign="center">
+                    <Box mt={2} textAlign="center">
                         <Typography variant="h5" gutterBottom>Place a Bid</Typography>
                         <Box display="flex" flexWrap="wrap" gap={2} justifyContent="center">
                             {teams.map(team => (
@@ -307,7 +310,7 @@ const Auction = () => {
                         </Box>
                     </Box>
 
-                    <Box mt={4} display="flex" justifyContent="center" gap={2}>
+                    <Box mt={2} display="flex" justifyContent="center" gap={2}>
                         <Button variant="contained" color="success" onClick={handleMarkSold} disabled={playerStatus === 'Sold' || bids.length === 0}>
                             Mark as Sold
                         </Button>

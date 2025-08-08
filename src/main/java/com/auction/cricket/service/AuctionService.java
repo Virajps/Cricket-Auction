@@ -104,24 +104,30 @@ public class AuctionService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public List<AuctionResponse> getAllAuctions() {
-        return auctionRepository.findAll().stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
-    }
+    
 
     @Transactional(readOnly = true)
-    public AuctionResponse getAuctionById(Long id) {
+    public AuctionResponse getAuctionById(Long id, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
         Auction auction = auctionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Auction not found with id: " + id));
+        if (!auction.getCreatedBy().equals(user)) {
+            throw new ResourceNotFoundException("Auction not found with id: " + id);
+        }
         return convertToResponse(auction);
     }
 
     @Transactional
-    public AuctionResponse updateAuction(Long id, AuctionRequest request) {
+    public AuctionResponse updateAuction(Long id, AuctionRequest request, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
         Auction auction = auctionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Auction not found"));
+
+        if (!auction.getCreatedBy().equals(user)) {
+            throw new ResourceNotFoundException("Auction not found with id: " + id);
+        }
 
         if (auction.getAuctionDate().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Cannot update auction after its date has passed");
@@ -142,9 +148,15 @@ public class AuctionService {
     }
 
     @Transactional
-    public void deleteAuction(Long id) {
+    public void deleteAuction(Long id, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
         Auction auction = auctionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Auction not found"));
+
+        if (!auction.getCreatedBy().equals(user)) {
+            throw new ResourceNotFoundException("Auction not found with id: " + id);
+        }
 
         if (auction.getAuctionDate().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Cannot delete auction after its date has passed");
@@ -154,9 +166,15 @@ public class AuctionService {
     }
 
     @Transactional
-    public AuctionResponse togglePlayerRegistration(Long id) {
+    public AuctionResponse togglePlayerRegistration(Long id, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
         Auction auction = auctionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Auction not found"));
+
+        if (!auction.getCreatedBy().equals(user)) {
+            throw new ResourceNotFoundException("Auction not found with id: " + id);
+        }
 
         auction.setPlayerRegistrationEnabled(!auction.getPlayerRegistrationEnabled());
         auction = auctionRepository.save(auction);
@@ -164,9 +182,15 @@ public class AuctionService {
     }
 
     @Transactional
-    public AuctionResponse toggleAuctionStatus(Long id) {
+    public AuctionResponse toggleAuctionStatus(Long id, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
         Auction auction = auctionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Auction not found"));
+
+        if (!auction.getCreatedBy().equals(user)) {
+            throw new ResourceNotFoundException("Auction not found with id: " + id);
+        }
 
         auction.setIsActive(!auction.getIsActive());
         auction = auctionRepository.save(auction);

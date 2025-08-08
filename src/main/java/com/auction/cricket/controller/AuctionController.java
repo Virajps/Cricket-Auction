@@ -30,8 +30,8 @@ public class AuctionController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AuctionResponse> getAuctionById(@PathVariable Long id) {
-        return ResponseEntity.ok(auctionService.getAuctionById(id));
+    public ResponseEntity<AuctionResponse> getAuctionById(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(auctionService.getAuctionById(id, authentication.getName()));
     }
 
     @PostMapping
@@ -62,30 +62,32 @@ public class AuctionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<AuctionResponse>> getAllAuctions() {
-        return ResponseEntity.ok(auctionService.getAllAuctions());
+    public ResponseEntity<List<AuctionResponse>> getAllAuctions(Authentication authentication) {
+        return ResponseEntity.ok(auctionService.getAuctionsByUser(authentication.getName()));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<AuctionResponse> updateAuction(
             @PathVariable Long id,
-            @Valid @RequestBody AuctionRequest request) {
-        return ResponseEntity.ok(auctionService.updateAuction(id, request));
+            @Valid @RequestBody AuctionRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(auctionService.updateAuction(id, request, authentication.getName()));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteAuction(@PathVariable Long id) {
-        auctionService.deleteAuction(id);
+    public ResponseEntity<Void> deleteAuction(@PathVariable Long id, Authentication authentication) {
+        auctionService.deleteAuction(id, authentication.getName());
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/{id}/toggle-registration")
-    public ResponseEntity<AuctionResponse> togglePlayerRegistration(@PathVariable Long id) {
-        return ResponseEntity.ok(auctionService.togglePlayerRegistration(id));
+    @PutMapping("/{id}/toggle-registration")
+    public ResponseEntity<AuctionResponse> togglePlayerRegistration(@PathVariable Long id,
+            Authentication authentication) {
+        return ResponseEntity.ok(auctionService.togglePlayerRegistration(id, authentication.getName()));
     }
 
-    @PostMapping("/{id}/toggle-status")
-    public ResponseEntity<AuctionResponse> toggleAuctionStatus(@PathVariable Long id) {
-        return ResponseEntity.ok(auctionService.toggleAuctionStatus(id));
+    @PutMapping("/{id}/toggle-status")
+    public ResponseEntity<AuctionResponse> toggleAuctionStatus(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(auctionService.toggleAuctionStatus(id, authentication.getName()));
     }
 }

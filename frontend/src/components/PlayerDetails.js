@@ -83,13 +83,14 @@ const PlayerDetails = () => {
 
     return (
         <Container maxWidth="md">
+            <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mt: 4, mb: 2 }}>
+                PLAYER DETAILS
+            </Typography>
             <Box sx={{ py: 4 }}>
                 <Paper elevation={0} sx={{ p: 4, bgcolor: 'background.paper', borderRadius: 2 }}>
                     <Grid container spacing={3}>
+                        <Grid container spacing={3}>
                         <Grid item xs={12} md={6}>
-                            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                                <Avatar src={player.photoUrl || 'https://via.placeholder.com/150'} sx={{ width: 150, height: 150 }} />
-                            </Box>
                             <Typography variant="h4" component="h1" gutterBottom>
                                 {player.name}
                             </Typography>
@@ -114,7 +115,12 @@ const PlayerDetails = () => {
                                 </Typography>
                             )}
                         </Grid>
-                        
+                        <Grid item xs={12} md={6}>
+                            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 , mt: 2}}>
+                                <Avatar src={player.photoUrl || 'https://via.placeholder.com/150'} sx={{ width: 300, height: 300, borderRadius: 0 }} />
+                            </Box>
+                        </Grid>
+                        </Grid>
                     </Grid>
                 </Paper>
 
