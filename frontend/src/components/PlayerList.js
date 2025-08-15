@@ -24,6 +24,7 @@ import {
     Avatar,
     Pagination,
     TextField,
+    Stack,
 } from '@mui/material';
 import { Delete as DeleteIcon, Search as SearchIcon, Loop as LoopIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -192,46 +193,48 @@ const PlayerList = () => {
                             <SearchIcon />
                         </IconButton>
                     </Tooltip>
-                    <FormControl sx={{ minWidth: 120 }}>
-                        <InputLabel id="status-filter-label">Status</InputLabel>
-                        <Select
-                            labelId="status-filter-label"
-                            id="status-filter"
-                            value={statusFilter}
-                            label="Status"
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                        >
-                            <MenuItem value="ALL">All</MenuItem>
-                            <MenuItem value="AVAILABLE">Available</MenuItem>
-                            <MenuItem value="SOLD">Sold</MenuItem>
-                            <MenuItem value="UNSOLD">Unsold</MenuItem>
-                        </Select>
-                    </FormControl>
-                    {(user?.role === 'ADMIN' || user?.username === auction?.createdBy) && (
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={() => navigate(`/auctions/${auctionId}/players/new`)}
-                        >
-                            Add Player
-                        </Button>
-                    )}
-                    <Button
-                        variant="outlined"
-                        onClick={() => navigate(`/auctions/${auctionId}`)}
-                    >
-                        Back
-                    </Button>
-                    {(user?.role === 'ADMIN' || user?.username === auction?.createdBy) && (
-                        <Tooltip title="Set All Unsold Players Available">
-                            <IconButton
-                                color="info"
-                                onClick={handleSetUnsoldAvailable}
+                    <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', gap: 1 }}>
+                        <FormControl sx={{ minWidth: 120 }}>
+                            <InputLabel id="status-filter-label">Status</InputLabel>
+                            <Select
+                                labelId="status-filter-label"
+                                id="status-filter"
+                                value={statusFilter}
+                                label="Status"
+                                onChange={(e) => setStatusFilter(e.target.value)}
                             >
-                                <LoopIcon />
-                            </IconButton>
-                        </Tooltip>
-                    )}
+                                <MenuItem value="ALL">All</MenuItem>
+                                <MenuItem value="AVAILABLE">Available</MenuItem>
+                                <MenuItem value="SOLD">Sold</MenuItem>
+                                <MenuItem value="UNSOLD">Unsold</MenuItem>
+                            </Select>
+                        </FormControl>
+                        {(user?.role === 'ADMIN' || user?.username === auction?.createdBy) && (
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={() => navigate(`/auctions/${auctionId}/players/new`)}
+                            >
+                                Add Player
+                            </Button>
+                        )}
+                        <Button
+                            variant="outlined"
+                            onClick={() => navigate(`/auctions/${auctionId}`)}
+                        >
+                            Back
+                        </Button>
+                        {(user?.role === 'ADMIN' || user?.username === auction?.createdBy) && (
+                            <Tooltip title="Set All Unsold Players Available">
+                                <IconButton
+                                    color="info"
+                                    onClick={handleSetUnsoldAvailable}
+                                >
+                                    <LoopIcon />
+                                </IconButton>
+                            </Tooltip>
+                        )}
+                    </Stack>
                 </Box>
             </Box>
             {error && (
