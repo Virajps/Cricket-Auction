@@ -33,6 +33,8 @@
     "cricket-auction-frontend": "file:..",
 
     "framer-motion": "^12.23.5",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.2",
 
     "react": "^18.2.0",
 
@@ -101,4 +103,3 @@
   "proxy": "http://localhost:8080"
 
 }
-

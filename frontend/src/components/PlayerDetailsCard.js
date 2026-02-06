@@ -45,12 +45,11 @@ const PlayerDetailsCard = ({ open, handleClose, player }) => {
                                 <ListItem>
                                     <ListItemText primary={`Role: ${player.role}`} />
                                 </ListItem>
-                                <ListItem>
-                                    <ListItemText primary={`Category: ${player.category}`} />
-                                </ListItem>
-                                <ListItem>
-                                    <ListItemText primary={`Nationality: ${player.nationality}`} />
-                                </ListItem>
+                                {player.mobileNumber && (
+                                    <ListItem>
+                                        <ListItemText primary={`Mobile: ${player.mobileNumber}`} />
+                                    </ListItem>
+                                )}
                                 <ListItem>
                                     <ListItemText primary={`Age: ${player.age}`} />
                                 </ListItem>

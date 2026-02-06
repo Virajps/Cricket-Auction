@@ -14,6 +14,7 @@ import com.auction.cricket.entity.Auction;
 import com.auction.cricket.entity.Team;
 import com.auction.cricket.exception.ResourceNotFoundException;
 import com.auction.cricket.repository.AuctionRepository;
+import com.auction.cricket.repository.PlayerRepository;
 import com.auction.cricket.repository.TeamRepository;
 import com.auction.cricket.repository.UserRepository;
 
@@ -24,12 +25,14 @@ public class TeamService {
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
     private final AuctionRepository auctionRepository;
+    private final PlayerRepository playerRepository;
 
     public TeamService(TeamRepository teamRepository, UserRepository userRepository,
-            AuctionRepository auctionRepository) {
+            AuctionRepository auctionRepository, PlayerRepository playerRepository) {
         this.teamRepository = teamRepository;
         this.userRepository = userRepository;
         this.auctionRepository = auctionRepository;
+        this.playerRepository = playerRepository;
     }
 
     @Transactional(readOnly = true)
@@ -81,6 +84,11 @@ public class TeamService {
         team.setAuction(auction);
         team.setBudgetAmount(auction.getPointsPerTeam().doubleValue());
         team.setRemainingBudget(auction.getPointsPerTeam().doubleValue());
+
+        // Ensure numeric counters are initialized to zero to avoid DB constraint
+        // violations
+        team.setPointsUsed(0);
+        team.setPlayersCount(0);
 
         team.setIsActive(true);
         team.setLogoUrl(request.getLogoUrl());
@@ -137,9 +145,10 @@ public class TeamService {
         if (budget < 0) {
             throw new RuntimeException("Budget cannot be negative");
         }
-        
+
         team.setBudgetAmount(budget);
-        team.setRemainingBudget(budget - team.getPointsUsed());
+        int pointsUsed = team.getPointsUsed() != null ? team.getPointsUsed() : 0;
+        team.setRemainingBudget(budget - pointsUsed);
         team = teamRepository.save(team);
         return mapToResponse(team);
     }
@@ -161,8 +170,10 @@ public class TeamService {
         response.setName(team.getName());
         response.setBudgetAmount(team.getBudgetAmount());
         response.setRemainingBudget(team.getRemainingBudget());
-        response.setPointsUsed(team.getPointsUsed());
-        response.setPlayersCount(team.getPlayersCount());
+        long playersCount = playerRepository.countByAuctionAndTeam(team.getAuction(), team);
+        Double pointsUsed = playerRepository.sumSoldPriceByAuctionAndTeam(team.getAuction(), team);
+        response.setPlayersCount((int) playersCount);
+        response.setPointsUsed(pointsUsed == null ? 0 : (int) Math.round(pointsUsed));
         response.setAuctionName(team.getAuction().getName());
         response.setIsActive(team.getIsActive());
         response.setLogoUrl(team.getLogoUrl());

@@ -109,9 +109,17 @@ const AuctionDetails = () => {
                             variant="outlined"
                             color="primary"
                             sx={{ mr: 2 }}
-                            onClick={() => navigate(`/auctions`)}
+                                onClick={() => navigate(`/auctions`)}
                         >
                             Back
+                        </Button>
+                        <Button
+                            variant="outlined"
+                            color="secondary"
+                            sx={{ mr: 2 }}
+                            onClick={() => navigate(`/auctions/${id}/summary`)}
+                        >
+                            Summary
                         </Button>
                         {(auction.isActive && (user?.role === 'ADMIN' || user?.username === auction.createdBy)) && (
                             <>
@@ -165,7 +173,6 @@ const AuctionDetails = () => {
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
                     <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} textColor="primary" indicatorColor="primary">
                         <Tab label="Overview" />
-                        <Tab label="Sponsors" />
                         <Tab label="Settings" />
                     </Tabs>
                 </Box>
@@ -208,49 +215,6 @@ const AuctionDetails = () => {
                 )}
 
                 {activeTab === 1 && (
-                    <Paper elevation={1} sx={{ p: 3 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="h6">Sponsors</Typography>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={() => navigate(`/auctions/${id}/sponsors`)}
-                            >
-                                Manage Sponsors
-                            </Button>
-                        </Box>
-                        <Grid container spacing={2}>
-                            {auction.sponsors?.map((sponsor) => (
-                                <Grid item xs={12} sm={6} md={4} key={sponsor.id}>
-                                    <Card elevation={0} sx={{ border: '1px solid #eee', textAlign: 'center' }}>
-                                        <CardContent>
-                                            {sponsor.logoUrl && (
-                                                <Avatar src={sponsor.logoUrl} alt={sponsor.name} sx={{ width: 64, height: 64, mx: 'auto', mb: 1 }} />
-                                            )}
-                                            <Typography variant="subtitle1" fontWeight="bold">{sponsor.name}</Typography>
-                                            <Typography variant="body2" color="text.secondary">{sponsor.description}</Typography>
-                                            {sponsor.website && (
-                                                <Button
-                                                    href={sponsor.website}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    variant="text"
-                                                    color="secondary"
-                                                    size="small"
-                                                    sx={{ mt: 1 }}
-                                                >
-                                                    Visit Website
-                                                </Button>
-                                            )}
-                                        </CardContent>
-                                    </Card>
-                                </Grid>
-                            ))}
-                        </Grid>
-                    </Paper>
-                )}
-
-                {activeTab === 2 && (
                     <Paper elevation={1} sx={{ p: 3 }}>
                         <Typography variant="h6" mb={2}>Auction Settings</Typography>
                         <Grid container spacing={3}>

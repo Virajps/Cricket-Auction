@@ -169,6 +169,14 @@ export const teamService = {
             },
         });
         return response.data;
+    },
+    addIconPlayer: async (auctionId, teamId, playerId) => {
+        const response = await api.post(`/auctions/${auctionId}/teams/${teamId}/icon-players/${playerId}`);
+        return response.data;
+    },
+    removeIconPlayer: async (auctionId, teamId, playerId) => {
+        const response = await api.delete(`/auctions/${auctionId}/teams/${teamId}/icon-players/${playerId}`);
+        return response.data;
     }
 };
 export const playerService = {
@@ -218,6 +226,16 @@ export const playerService = {
         const formData = new FormData();
         formData.append('file', file);
         const response = await api.post('/upload/image', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    },
+    importPlayers: async (auctionId, file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await api.post(`/auctions/${auctionId}/players/import`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },

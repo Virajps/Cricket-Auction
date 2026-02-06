@@ -116,6 +116,15 @@ const TeamList = () => {
         setSelectedTeamPlayers([]);
     };
 
+    const refreshTeams = useCallback(async () => {
+        try {
+            const teamsResponse = await teamService.getByAuction(auctionId);
+            setTeams(teamsResponse || []);
+        } catch (err) {
+            console.error('Error refreshing teams:', err);
+        }
+    }, [auctionId]);
+
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
@@ -305,6 +314,10 @@ const TeamList = () => {
                 handleClose={handleCloseTeamDetails}
                 team={selectedTeam}
                 players={selectedTeamPlayers}
+                auctionId={auctionId}
+                auction={auction}
+                onPlayersUpdated={setSelectedTeamPlayers}
+                onTeamUpdated={refreshTeams}
             />
         </Container>
     );

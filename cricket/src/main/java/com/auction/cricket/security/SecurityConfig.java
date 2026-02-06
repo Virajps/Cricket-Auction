@@ -34,6 +34,8 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/images/**").permitAll()
+                .requestMatchers("/api/proxy/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
                 .requestMatchers("/ws/**").permitAll()
                 .requestMatchers("/api/auctions/**").authenticated()

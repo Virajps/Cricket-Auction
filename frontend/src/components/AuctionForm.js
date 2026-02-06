@@ -31,14 +31,14 @@ const AuctionForm = () => {
         name: '',
         logoUrl: '',
         auctionDate: '',
-        pointsPerTeam: 0,
-        totalTeams: 0,
-        minimumBid: 0,
-        bidIncreaseBy: 0,
-        basePrice: 0,
-        playersPerTeam: 0,
-        isActive: false,
-        playerRegistrationEnabled: false
+        pointsPerTeam: '',
+        totalTeams: '',
+        minimumBid: '',
+        bidIncreaseBy: '',
+        basePrice: '',
+        playersPerTeam: '',
+        isActive: true,
+        playerRegistrationEnabled: true
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -173,7 +173,7 @@ const AuctionForm = () => {
 
                     {error && (
                         <Alert severity="error" sx={{ mb: 2 }}>
-                            {error.message}
+                            {error}
                         </Alert>
                     )}
 
@@ -230,6 +230,7 @@ const AuctionForm = () => {
                                     onChange={handleChange}
                                     required
                                     InputLabelProps={{ shrink: true }}
+                                    placeholder="Select date & time"
                                 />
                             </Grid>
 
@@ -243,6 +244,7 @@ const AuctionForm = () => {
                                     onChange={handleChange}
                                     required
                                     inputProps={{ min: 1 }}
+                                    placeholder="e.g. 100000"
                                 />
                             </Grid>
 
@@ -256,6 +258,7 @@ const AuctionForm = () => {
                                     onChange={handleChange}
                                     required
                                     inputProps={{ min: 1 }}
+                                    placeholder="e.g. 8"
                                 />
                             </Grid>
 
@@ -269,6 +272,7 @@ const AuctionForm = () => {
                                     onChange={handleChange}
                                     required
                                     inputProps={{ min: 0, step: 0.01 }}
+                                    placeholder="e.g. 1000"
                                 />
                             </Grid>
 
@@ -282,6 +286,7 @@ const AuctionForm = () => {
                                     onChange={handleChange}
                                     required
                                     inputProps={{ min: 0.01, step: 0.01 }}
+                                    placeholder="e.g. 1000"
                                 />
                             </Grid>
 
@@ -295,6 +300,7 @@ const AuctionForm = () => {
                                     onChange={handleChange}
                                     required
                                     inputProps={{ min: 0, step: 0.01 }}
+                                    placeholder="e.g. 1000"
                                 />
                             </Grid>
 
@@ -308,6 +314,7 @@ const AuctionForm = () => {
                                     onChange={handleChange}
                                     required
                                     inputProps={{ min: 1 }}
+                                    placeholder="e.g. 11"
                                 />
                             </Grid>
 

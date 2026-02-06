@@ -10,9 +10,8 @@ const BidRuleForm = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [rule, setRule] = useState({
-        minimumBid: '',
-        maximumBid: '',
-        bidIncrement: ''
+        thresholdAmount: '',
+        incrementAmount: ''
     });
 
     const loadRule = useCallback(async () => {
@@ -78,46 +77,28 @@ const BidRuleForm = () => {
                     {error && <Alert severity="error">{error}</Alert>}
                     <form onSubmit={handleSubmit}>
                         <TextField
-                            label="Category"
-                            name="category"
-                            value={rule.category}
-                            onChange={handleChange}
-                            required
-                            fullWidth
-                            margin="normal"
-                        />
-                        <TextField
-                            label="Minimum Bid"
-                            name="minimumBid"
+                            label="Threshold Amount"
+                            name="thresholdAmount"
                             type="number"
-                            value={rule.minimumBid}
+                            value={rule.thresholdAmount}
                             onChange={handleChange}
                             required
                             fullWidth
                             margin="normal"
                             inputProps={{ min: 0 }}
+                            helperText="When current price reaches this amount, increment changes"
                         />
                         <TextField
-                            label="Maximum Bid"
-                            name="maximumBid"
+                            label="Increment Amount"
+                            name="incrementAmount"
                             type="number"
-                            value={rule.maximumBid}
-                            onChange={handleChange}
-                            required
-                            fullWidth
-                            margin="normal"
-                            inputProps={{ min: 0 }}
-                        />
-                        <TextField
-                            label="Bid Increment"
-                            name="bidIncrement"
-                            type="number"
-                            value={rule.bidIncrement}
+                            value={rule.incrementAmount}
                             onChange={handleChange}
                             required
                             fullWidth
                             margin="normal"
                             inputProps={{ min: 1 }}
+                            helperText="New bid increment after threshold"
                         />
                         <Button 
                             className="w-100" 

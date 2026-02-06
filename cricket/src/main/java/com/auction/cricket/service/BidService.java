@@ -76,7 +76,6 @@ public class BidService {
         team.setPlayersCount(team.getPlayersCount() + 1);
         team = teamRepository.save(team);
         teamRepository.flush(); // Explicitly flush changes to the database
-        teamRepository.refresh(team); // Refresh the entity from the database
 
         bid = bidRepository.save(bid);
         BidResponse response = convertToResponse(bid);
@@ -96,6 +95,12 @@ public class BidService {
 
     public List<BidResponse> getBidsByTeam(Long teamId) {
         return bidRepository.findByTeamId(teamId).stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<BidResponse> getBidsByAuction(Long auctionId) {
+        return bidRepository.findByPlayerAuctionIdOrderByAmountDesc(auctionId).stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }

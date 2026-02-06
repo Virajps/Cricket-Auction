@@ -41,10 +41,6 @@ public class PlayerService {
         player.setAge(request.getAge());
         player.setRole(request.getRole());
         player.setCurrentPrice(auction.getBasePrice());
-        player.setCategory(request.getCategory());
-        player.setNationality(request.getNationality());
-        player.setBattingStyle(request.getBattingStyle());
-        player.setBowlingStyle(request.getBowlingStyle());
         player.setPhotoUrl(request.getPhotoUrl());
         player.setAuction(auction);
         if (request.getStatus() != null) {
@@ -114,10 +110,6 @@ public class PlayerService {
         player.setName(request.getName());
         player.setAge(request.getAge());
         player.setRole(request.getRole());
-        player.setCategory(request.getCategory());
-        player.setNationality(request.getNationality());
-        player.setBattingStyle(request.getBattingStyle());
-        player.setBowlingStyle(request.getBowlingStyle());
         player.setPhotoUrl(request.getPhotoUrl());
         if (request.getStatus() != null) {
             player.setStatus(PlayerStatus.valueOf(request.getStatus()));
@@ -158,6 +150,59 @@ public class PlayerService {
             player.setStatus(PlayerStatus.UNSOLD);
 
         }
+        player = playerRepository.save(player);
+        return convertToResponse(player);
+    }
+
+    @Transactional
+    public PlayerResponse assignIconPlayer(Long auctionId, Long teamId, Long playerId) {
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Auction not found with id: " + auctionId));
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + teamId));
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Player not found with id: " + playerId));
+
+        if (!player.getAuction().getId().equals(auctionId)) {
+            throw new ResourceNotFoundException("Player not found in auction with id: " + auctionId);
+        }
+        if (player.getTeam() != null) {
+            throw new IllegalArgumentException("Player is already assigned to a team.");
+        }
+
+        player.setTeam(team);
+        player.setIsIcon(true);
+        player.setStatus(PlayerStatus.SOLD);
+        player.setCurrentPrice(0.0);
+
+        player = playerRepository.save(player);
+        return convertToResponse(player);
+    }
+
+    @Transactional
+    public PlayerResponse removeIconPlayer(Long auctionId, Long teamId, Long playerId) {
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Auction not found with id: " + auctionId));
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + teamId));
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Player not found with id: " + playerId));
+
+        if (!player.getAuction().getId().equals(auctionId)) {
+            throw new ResourceNotFoundException("Player not found in auction with id: " + auctionId);
+        }
+        if (player.getTeam() == null || !player.getTeam().getId().equals(teamId)) {
+            throw new ResourceNotFoundException("Player not found in team with id: " + teamId);
+        }
+        if (player.getIsIcon() == null || !player.getIsIcon()) {
+            throw new IllegalArgumentException("Player is not an icon player.");
+        }
+
+        player.setIsIcon(false);
+        player.setTeam(null);
+        player.setStatus(PlayerStatus.AVAILABLE);
+        player.setCurrentPrice(auction.getBasePrice());
+
         player = playerRepository.save(player);
         return convertToResponse(player);
     }
@@ -205,10 +250,6 @@ public class PlayerService {
         response.setName(player.getName());
         response.setAge(player.getAge());
         response.setRole(player.getRole());
-        response.setCategory(player.getCategory());
-        response.setNationality(player.getNationality());
-        response.setBattingStyle(player.getBattingStyle());
-        response.setBowlingStyle(player.getBowlingStyle());
         if (player.getTeam() != null) {
             response.setTeamName(player.getTeam().getName());
         }
@@ -217,6 +258,7 @@ public class PlayerService {
         response.setUnsold(player.getStatus() == PlayerStatus.UNSOLD);
         response.setCurrentPrice(player.getCurrentPrice());
         response.setPhotoUrl(player.getPhotoUrl());
+        response.setIsIcon(player.getIsIcon());
         return response;
     }
 }

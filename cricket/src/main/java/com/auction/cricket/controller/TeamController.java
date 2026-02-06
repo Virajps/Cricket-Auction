@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.auction.cricket.dto.TeamRequest;
 import com.auction.cricket.dto.TeamResponse;
+import com.auction.cricket.dto.PlayerResponse;
+import com.auction.cricket.service.PlayerService;
 import com.auction.cricket.service.TeamService;
 
 import jakarta.validation.Valid;
@@ -26,9 +28,11 @@ public class TeamController {
     private static final Logger logger = LoggerFactory.getLogger(TeamController.class);
 
     private final TeamService teamService;
+    private final PlayerService playerService;
 
-    public TeamController(TeamService teamService) {
+    public TeamController(TeamService teamService, PlayerService playerService) {
         this.teamService = teamService;
+        this.playerService = playerService;
     }
 
     @GetMapping
@@ -78,5 +82,24 @@ public class TeamController {
     public ResponseEntity<TeamResponse> toggleStatus(@PathVariable Long id) {
         logger.debug("Received request to toggle status for team: {}", id);
         return ResponseEntity.ok(teamService.toggleStatus(id));
+    }
+
+    @PostMapping("/{teamId}/icon-players/{playerId}")
+    public ResponseEntity<PlayerResponse> addIconPlayer(
+            @PathVariable Long auctionId,
+            @PathVariable Long teamId,
+            @PathVariable Long playerId) {
+        logger.debug("Received request to add icon player {} to team {} for auction {}", playerId, teamId, auctionId);
+        return ResponseEntity.ok(playerService.assignIconPlayer(auctionId, teamId, playerId));
+    }
+
+    @DeleteMapping("/{teamId}/icon-players/{playerId}")
+    public ResponseEntity<PlayerResponse> removeIconPlayer(
+            @PathVariable Long auctionId,
+            @PathVariable Long teamId,
+            @PathVariable Long playerId) {
+        logger.debug("Received request to remove icon player {} from team {} for auction {}", playerId, teamId,
+                auctionId);
+        return ResponseEntity.ok(playerService.removeIconPlayer(auctionId, teamId, playerId));
     }
 }

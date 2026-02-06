@@ -70,7 +70,7 @@ const BidRuleList = () => {
                         </Button>
                         <Button 
                             variant="outlined"
-                            onClick={() => navigate(-1)}
+                            onClick={() => navigate(`/auctions/${auctionId}`)}
                         >
                             Back
                         </Button>
@@ -82,23 +82,19 @@ const BidRuleList = () => {
                         <Table sx={{ minWidth: 650 }} aria-label="bid rules table">
                             <TableHead sx={{ bgcolor: 'primary.light' }}>
                                 <TableRow>
-                                    <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>Category</TableCell>
-                                    <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>Minimum Bid</TableCell>
-                                    <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>Maximum Bid</TableCell>
-                                    <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>Bid Increment</TableCell>
-                                    <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>Actions</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {rules.map(rule => (
+                                <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>Threshold Amount</TableCell>
+                                <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>Increment Amount</TableCell>
+                                <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>Actions</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {rules.map(rule => (
                                     <TableRow
                                         key={rule.id}
                                         sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                                     >
-                                        <TableCell component="th" scope="row">{rule.category}</TableCell>
-                                        <TableCell>{rule.minimumBid}</TableCell>
-                                        <TableCell>{rule.maximumBid}</TableCell>
-                                        <TableCell>{rule.bidIncrement}</TableCell>
+                                        <TableCell component="th" scope="row">{rule.thresholdAmount}</TableCell>
+                                        <TableCell>{rule.incrementAmount}</TableCell>
                                         <TableCell>
                                             <Button
                                                 variant="outlined"

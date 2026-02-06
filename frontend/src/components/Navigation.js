@@ -63,7 +63,7 @@ const Navigation = () => {
               letterSpacing: '1px',
             }}
           >
-            Cricket Auction
+            Squadify
           </Typography>
         </motion.div>
 

@@ -27,10 +27,8 @@ const PlayerForm = () => {
         name: '',
         age: '',
         role: '',
-        category: '',
-        nationality: '',
-        battingStyle: '',
-        bowlingStyle: '',
+        basePrice: 0,
+        mobileNumber: '',
         photoUrl: ''
     });
     const [selectedFile, setSelectedFile] = useState(null);
@@ -38,8 +36,14 @@ const PlayerForm = () => {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    const roles = ['Batsman', 'Bowler', 'All-rounder', 'Wicket-keeper'];
-    const categories = ['A', 'B', 'C', 'D'];
+    const roles = [
+        'RIGHT ARM BATSMAN',
+        'RIGHT ARM BOWLER',
+        'RIGHT ARM ALL-ROUNDER',
+        'LEFT ARM BATSMAN',
+        'LEFT ARM BOWLER',
+        'LEFT ARM ALL-ROUNDER'
+    ];
 
     const formVariants = {
         hidden: { opacity: 0, y: 40 },
@@ -50,6 +54,10 @@ const PlayerForm = () => {
         try {
             const response = await auctionService.getById(auctionId);
             setAuction(response);
+            // If creating a new player, default basePrice to auction basePrice
+            if (!id) {
+                setFormData(prev => ({ ...prev, basePrice: response.basePrice || 0 }));
+            }
         } catch (error) {
             console.error('Error fetching auction:', error);
             setError({
@@ -58,7 +66,7 @@ const PlayerForm = () => {
                 message: 'Unable to load auction details. Please try again later.'
             });
         }
-    }, [auctionId]);
+    }, [auctionId, id]);
 
     const fetchPlayer = useCallback(async () => {
         try {
@@ -69,10 +77,7 @@ const PlayerForm = () => {
                 age: response.age,
                 role: response.role,
                 basePrice: response.basePrice,
-                category: response.category,
-                nationality: response.nationality,
-                battingStyle: response.battingStyle || '',
-                bowlingStyle: response.bowlingStyle || '',
+                mobileNumber: response.mobileNumber || '',
                 photoUrl: response.photoUrl || ''
             });
         } catch (error) {
@@ -233,9 +238,35 @@ const PlayerForm = () => {
                                     type="number"
                                     value={formData.age}
                                     onChange={handleChange}
-                                    required
                                     variant="outlined"
                                     inputProps={{ min: 16, max: 45 }}
+                                    sx={{
+                                        '& .MuiOutlinedInput-root': {
+                                            '& fieldset': {
+                                                borderColor: '#ced4da',
+                                            },
+                                            '&:hover fieldset': {
+                                                borderColor: '#007BFF',
+                                            },
+                                            '&.Mui-focused fieldset': {
+                                                borderColor: '#007BFF',
+                                            },
+                                        },
+                                    }}
+                                />
+                            </Grid>
+
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Base Price"
+                                    name="basePrice"
+                                    type="number"
+                                    value={formData.basePrice}
+                                    onChange={handleChange}
+                                    variant="outlined"
+                                    inputProps={{ min: 0 }}
+                                    helperText="Set player's base price. Defaults to auction base price if left 0."
                                     sx={{
                                         '& .MuiOutlinedInput-root': {
                                             '& fieldset': {
@@ -287,92 +318,13 @@ const PlayerForm = () => {
                             <Grid item xs={12} sm={6}>
                                 <TextField
                                     fullWidth
-                                    select
-                                    label="Category"
-                                    name="category"
-                                    value={formData.category}
-                                    onChange={handleChange}
-                                    required
-                                    variant="outlined"
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            '& fieldset': {
-                                                borderColor: '#ced4da',
-                                            },
-                                            '&:hover fieldset': {
-                                                borderColor: '#007BFF',
-                                            },
-                                            '&.Mui-focused fieldset': {
-                                                borderColor: '#007BFF',
-                                            },
-                                        },
-                                    }}
-                                >
-                                    {categories.map((category) => (
-                                        <MenuItem key={category} value={category}>
-                                            {category}
-                                        </MenuItem>
-                                    ))}
-                                </TextField>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6}>
-                                <TextField
-                                    fullWidth
-                                    label="Nationality"
-                                    name="nationality"
-                                    value={formData.nationality}
-                                    onChange={handleChange}
-                                    required
-                                    variant="outlined"
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            '& fieldset': {
-                                                borderColor: '#ced4da',
-                                            },
-                                            '&:hover fieldset': {
-                                                borderColor: '#007BFF',
-                                            },
-                                            '&.Mui-focused fieldset': {
-                                                borderColor: '#007BFF',
-                                            },
-                                        },
-                                    }}
-                                />
-                            </Grid>
-
-                            <Grid item xs={12} sm={6}>
-                                <TextField
-                                    fullWidth
-                                    label="Batting Style"
-                                    name="battingStyle"
-                                    value={formData.battingStyle}
+                                    label="Mobile Number"
+                                    name="mobileNumber"
+                                    type="tel"
+                                    value={formData.mobileNumber}
                                     onChange={handleChange}
                                     variant="outlined"
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            '& fieldset': {
-                                                borderColor: '#ced4da',
-                                            },
-                                            '&:hover fieldset': {
-                                                borderColor: '#007BFF',
-                                            },
-                                            '&.Mui-focused fieldset': {
-                                                borderColor: '#007BFF',
-                                            },
-                                        },
-                                    }}
-                                />
-                            </Grid>
-
-                            <Grid item xs={12} sm={6}>
-                                <TextField
-                                    fullWidth
-                                    label="Bowling Style"
-                                    name="bowlingStyle"
-                                    value={formData.bowlingStyle}
-                                    onChange={handleChange}
-                                    variant="outlined"
+                                    helperText="Include country code, e.g. +919876543210"
                                     sx={{
                                         '& .MuiOutlinedInput-root': {
                                             '& fieldset': {

@@ -15,8 +15,6 @@ import PlayerForm from './components/PlayerForm';
 import CategoryList from './components/CategoryList';
 import CategoryForm from './components/CategoryForm';
 
-import SponsorList from './components/SponsorList';
-import SponsorForm from './components/SponsorForm';
 import AuctionSettings from './components/AuctionSettings';
 import BidRuleList from './components/BidRuleList';
 import BidRuleForm from './components/BidRuleForm';
@@ -24,6 +22,7 @@ import Profile from './components/Profile';
 import Login from './components/Login';
 import Register from './components/Register';
 import Auction from './components/Auction';
+import AuctionSummary from './components/AuctionSummary';
 import './App.css';
 
 function ProtectedRoute({ children, allowed, fallback }) {
@@ -57,6 +56,7 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/auctions/:id/live" element={<Auction />} />
+            <Route path="/auctions/:id/summary" element={<AuctionSummary />} />
             {/* Team routes */}
             <Route path="/auctions/:auctionId/teams" element={
               <ProtectedRoute
@@ -114,10 +114,6 @@ function App() {
             <Route path="/auctions/:auctionId/categories/new" element={<CategoryForm />} />
             <Route path="/auctions/:auctionId/categories/:id/edit" element={<CategoryForm />} />
             
-            {/* Sponsor routes */}
-            <Route path="/auctions/:auctionId/sponsors" element={<SponsorList />} />
-            <Route path="/auctions/:auctionId/sponsors/new" element={<SponsorForm />} />
-            <Route path="/auctions/:auctionId/sponsors/:id/edit" element={<SponsorForm />} />
             {/* Settings routes */}
             <Route path="/auctions/:auctionId/settings" element={<AuctionSettings />} />
             {/* Bid rules routes */}

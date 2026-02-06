@@ -25,14 +25,17 @@ import {
     Pagination,
     TextField,
     Stack,
+    Tab,
+    Tabs,
 } from '@mui/material';
-import { Delete as DeleteIcon, Search as SearchIcon, Loop as LoopIcon } from '@mui/icons-material';
+import { Delete as DeleteIcon, Search as SearchIcon, Loop as LoopIcon, CloudUpload as CloudUploadIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { playerService, auctionService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import ErrorMessage, { MessageType } from './common/ErrorMessage';
 import PlayerDetailsCard from './PlayerDetailsCard';
+import PlayerImport from './PlayerImport';
 
 
 
@@ -62,6 +65,7 @@ const PlayerList = () => {
     const [playersPerPage] = useState(9);
     const [playerDetailsDialogOpen, setPlayerDetailsDialogOpen] = useState(false);
     const [selectedPlayer, setSelectedPlayer] = useState(null);
+    const [activeTab, setActiveTab] = useState(0);
 
     const filteredPlayers = players.filter(player => {
         const statusMatch = statusFilter === 'ALL' || player.status === statusFilter;
@@ -163,6 +167,13 @@ const PlayerList = () => {
         setSelectedPlayer(null);
     };
 
+    const handleImportComplete = (result) => {
+        if (result && result.successfulRows > 0) {
+            fetchPlayers();
+            setActiveTab(0);
+        }
+    };
+
     if (loading) {
         return (
             <Container sx={{ py: 8, display: 'flex', justifyContent: 'center' }}>
@@ -210,13 +221,25 @@ const PlayerList = () => {
                             </Select>
                         </FormControl>
                         {(user?.role === 'ADMIN' || user?.username === auction?.createdBy) && (
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={() => navigate(`/auctions/${auctionId}/players/new`)}
-                            >
-                                Add Player
-                            </Button>
+                            <>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={() => navigate(`/auctions/${auctionId}/players/new`)}
+                                >
+                                    Add Player
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    startIcon={<CloudUploadIcon />}
+                                    onClick={() => setActiveTab(1)}
+                                    sx={{
+                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                    }}
+                                >
+                                    Import Excel
+                                </Button>
+                            </>
                         )}
                         <Button
                             variant="outlined"
@@ -237,111 +260,117 @@ const PlayerList = () => {
                     </Stack>
                 </Box>
             </Box>
+
             {error && (
                 <Alert severity="error" sx={{ mb: 4 }}>
                     {error.message}
                 </Alert>
             )}
-            <Grid container spacing={3}>
-                <AnimatePresence>
-                    {currentPlayers.length > 0 ? (
-                        currentPlayers.map((player, i) => (
-                            <Grid item xs={12} sm={6} md={4} key={player.id}>
-                                <motion.div
-                                    initial="hidden"
-                                    animate="visible"
-                                    exit="hidden"
-                                    variants={cardVariants}
-                                    custom={i}
-                                >
-                                    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', cursor: 'pointer' }} onClick={() => handlePlayerCardClick(player)}>
-                                        <CardContent sx={{ flexGrow: 1 }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                                <Avatar src={player.photoUrl || 'https://via.placeholder.com/50'} sx={{ width: 50, height: 50, mr: 2 }} />
-                                                <Typography variant="h5" component="h2" gutterBottom>
-                                                    {player.name}
-                                                </Typography>
-                                            </Box>
-                                            <Box sx={{ mb: 1 }}>
-                                                <Chip
-                                                    label={player.role}
-                                                    color="primary"
-                                                    size="small"
-                                                    sx={{ mr: 1 }}
-                                                />
-                                                <Chip
-                                                    label={player.category}
-                                                    color="secondary"
-                                                    size="small"
-                                                    sx={{ mr: 1 }}
-                                                />
-                                                <Chip
-                                                    label={player.status}
-                                                    color={player.status === 'SOLD' ? 'success' : player.status === 'UNSOLD' ? 'warning' : 'default'}
-                                                    size="small"
-                                                />
-                                            </Box>
-                                            <Typography variant="body2" color="text.secondary" gutterBottom>
-                                                Age: {player.age} | {player.nationality}
-                                            </Typography>
-                                            
-                                            {player.battingStyle && (
-                                                <Typography variant="body2" color="text.secondary" gutterBottom>
-                                                    Batting: {player.battingStyle}
-                                                </Typography>
-                                            )}
-                                            {player.bowlingStyle && (
-                                                <Typography variant="body2" color="text.secondary" gutterBottom>
-                                                    Bowling: {player.bowlingStyle}
-                                                </Typography>
-                                            )}
-                                            {player.description && (
-                                                <Typography variant="body2" color="text.secondary">
-                                                    {player.description}
-                                                </Typography>
-                                            )}
-                                        </CardContent>
-                                        {(user?.role === 'ADMIN' || user?.username === auction?.createdBy) && (
-                                            <CardActions sx={{ p: 2, justifyContent: 'flex-end' }}>
-                                                <Button
-                                                    size="small"
-                                                    variant="outlined"
-                                                    onClick={() => navigate(`/auctions/${auctionId}/players/${player.id}/edit`)}
-                                                >
-                                                    Edit
-                                                </Button>
-                                                <Tooltip title="Delete Player">
-                                                    <IconButton
-                                                        size="small"
-                                                        color="error"
-                                                        onClick={() => handleDeleteClick(player)}
-                                                    >
-                                                        <DeleteIcon />
-                                                    </IconButton>
-                                                </Tooltip>
-                                            </CardActions>
-                                        )}
-                                    </Card>
-                                </motion.div>
-                            </Grid>
-                        ))
-                    ) : (
-                        <Grid item xs={12}>
-                            <Typography variant="body1" color="text.secondary" align="center">
-                                No players found.
-                            </Typography>
-                        </Grid>
-                    )}
-                </AnimatePresence>
-            </Grid>
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                <Pagination
-                    count={Math.ceil(filteredPlayers.length / playersPerPage)}
-                    page={currentPage}
-                    onChange={handlePageChange}
-                    color="primary"
-                />
-            </Box>
+
+            <Tabs
+                value={activeTab}
+                onChange={(e, newValue) => setActiveTab(newValue)}
+                sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}
+            >
+                <Tab label={`Players (${filteredPlayers.length})`} />
+                {(user?.role === 'ADMIN' || user?.username === auction?.createdBy) && (
+                    <Tab label="Import Players" icon={<CloudUploadIcon />} iconPosition="start" />
+                )}
+            </Tabs>
+
+            {activeTab === 0 && (
+                <>
+                    <Grid container spacing={3}>
+                        <AnimatePresence>
+                            {currentPlayers.length > 0 ? (
+                                currentPlayers.map((player, i) => (
+                                    <Grid item xs={12} sm={6} md={4} key={player.id}>
+                                        <motion.div
+                                            initial="hidden"
+                                            animate="visible"
+                                            exit="hidden"
+                                            variants={cardVariants}
+                                            custom={i}
+                                        >
+                                            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', cursor: 'pointer' }} onClick={() => handlePlayerCardClick(player)}>
+                                                <CardContent sx={{ flexGrow: 1 }}>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                                        <Avatar src={player.photoUrl || 'https://via.placeholder.com/50'} sx={{ width: 50, height: 50, mr: 2 }} />
+                                                        <Typography variant="h5" component="h2" gutterBottom>
+                                                            {player.name}
+                                                        </Typography>
+                                                    </Box>
+                                                    <Box sx={{ mb: 1 }}>
+                                                        <Chip
+                                                            label={player.role}
+                                                            color="primary"
+                                                            size="small"
+                                                            sx={{ mr: 1 }}
+                                                        />
+                                                        <Chip
+                                                            label={player.status}
+                                                            color={player.status === 'SOLD' ? 'success' : player.status === 'UNSOLD' ? 'warning' : 'default'}
+                                                            size="small"
+                                                        />
+                                                    </Box>
+                                                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                                                        Age: {player.age}{player.mobileNumber && ` | ${player.mobileNumber}`}
+                                                    </Typography>
+                                                    {player.description && (
+                                                        <Typography variant="body2" color="text.secondary">
+                                                            {player.description}
+                                                        </Typography>
+                                                    )}
+                                                </CardContent>
+                                                {(user?.role === 'ADMIN' || user?.username === auction?.createdBy) && (
+                                                    <CardActions sx={{ p: 2, justifyContent: 'flex-end' }}>
+                                                        <Button
+                                                            size="small"
+                                                            variant="outlined"
+                                                            onClick={() => navigate(`/auctions/${auctionId}/players/${player.id}/edit`)}
+                                                        >
+                                                            Edit
+                                                        </Button>
+                                                        <Tooltip title="Delete Player">
+                                                            <IconButton
+                                                                size="small"
+                                                                color="error"
+                                                                onClick={() => handleDeleteClick(player)}
+                                                            >
+                                                                <DeleteIcon />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </CardActions>
+                                                )}
+                                            </Card>
+                                        </motion.div>
+                                    </Grid>
+                                ))
+                            ) : (
+                                <Grid item xs={12}>
+                                    <Typography variant="body1" color="text.secondary" align="center">
+                                        No players found.
+                                    </Typography>
+                                </Grid>
+                            )}
+                        </AnimatePresence>
+                    </Grid>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                        <Pagination
+                            count={Math.ceil(filteredPlayers.length / playersPerPage)}
+                            page={currentPage}
+                            onChange={handlePageChange}
+                            color="primary"
+                        />
+                    </Box>
+                </>
+            )}
+
+            {activeTab === 1 && (user?.role === 'ADMIN' || user?.username === auction?.createdBy) && (
+                <Box sx={{ mt: 3 }}>
+                    <PlayerImport auctionId={parseInt(auctionId)} onImportComplete={handleImportComplete} />
+                </Box>
+            )}
             <Dialog
                 open={deleteDialogOpen}
                 onClose={handleDeleteCancel}

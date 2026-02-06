@@ -25,15 +25,15 @@ public class AuctionRequest {
     private Integer totalTeams;
 
     @NotNull(message = "Minimum bid is required")
-    @Min(value = 0, message = "Minimum bid must be non-negative")
+    @DecimalMin(value = "0.0", inclusive = true, message = "Minimum bid must be non-negative")
     private Double minimumBid;
 
     @NotNull(message = "Bid increase by is required")
-    @Min(value = 1, message = "Bid increase must be at least 1")
+    @DecimalMin(value = "0.01", inclusive = true, message = "Bid increase must be at least 0.01")
     private Double bidIncreaseBy;
 
     @NotNull(message = "Base price is required")
-    @Min(value = 0, message = "Base price must be positive")
+    @DecimalMin(value = "0.0", inclusive = true, message = "Base price must be non-negative")
     private Double basePrice;
 
     @NotNull(message = "Players per team is required")

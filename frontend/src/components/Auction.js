@@ -44,6 +44,9 @@ const Auction = () => {
     const [showSnackbar, setShowSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [showPhotoModal, setShowPhotoModal] = useState(false);
+    const [jumpBidAmount, setJumpBidAmount] = useState('');
+    const [jumpBidTeamId, setJumpBidTeamId] = useState('');
+    const [showJumpBid, setShowJumpBid] = useState(false);
 
     
     const lastBid = Array.isArray(bids) && bids.find(bid => bid.playerId === selectedPlayer?.id);
@@ -56,16 +59,62 @@ const Auction = () => {
         else setPlayerStatus('Available');
     }, [selectedPlayer]);
 
+    const resolveBidIncrement = (currentPrice) => {
+        const baseIncrement = auction?.bidIncreaseBy || 1;
+        const rules = Array.isArray(auction?.bidRules) ? auction.bidRules : [];
+        if (rules.length === 0) return baseIncrement;
+        const sorted = [...rules]
+            .map(r => ({
+                thresholdAmount: Number(r?.thresholdAmount),
+                incrementAmount: Number(r?.incrementAmount)
+            }))
+            .filter(r => Number.isFinite(r.thresholdAmount) && Number.isFinite(r.incrementAmount))
+            .sort((a, b) => a.thresholdAmount - b.thresholdAmount);
+        let increment = baseIncrement;
+        sorted.forEach(rule => {
+            if (currentPrice >= rule.thresholdAmount) {
+                increment = rule.incrementAmount;
+            }
+        });
+        return increment;
+    };
+
     const handleTeamBid = (teamId) => {
         if (!selectedPlayer || selectedPlayer.isSold || lastBidTeamId === teamId) return;
         const team = teams.find(t => t.id === Number(teamId));
-        const currentPrice = selectedPlayer?.currentPrice || selectedPlayer?.basePrice || 0;
-        const bidIncrement = auction?.bidIncreaseBy || 1;
+        const currentPrice = selectedPlayer?.currentPrice ?? 0;
+        const bidIncrement = resolveBidIncrement(currentPrice);
         if (!team || team.remainingBudget < currentPrice + bidIncrement) return;
 
         const newBidAmount = currentPrice + bidIncrement;
         setBids([{ id: Date.now(), playerId: selectedPlayer.id, teamId: team.id, teamName: team.name, amount: newBidAmount }, ...bids]);
         setSelectedPlayer({ ...selectedPlayer, currentPrice: newBidAmount });
+    };
+
+    const handleJumpBid = (teamId) => {
+        if (!selectedPlayer || selectedPlayer.isSold || lastBidTeamId === teamId) return;
+        const team = teams.find(t => t.id === Number(teamId));
+        const currentPrice = selectedPlayer?.currentPrice ?? 0;
+        const bidIncrement = resolveBidIncrement(currentPrice);
+        const desired = Number(jumpBidAmount);
+        if (!team) return;
+        if (!Number.isFinite(desired)) {
+            setSnackbarMessage('Enter a valid jump bid amount.');
+            setShowSnackbar(true);
+            return;
+        }
+        if (desired < currentPrice + bidIncrement) {
+            setSnackbarMessage(`Jump bid must be at least ${currentPrice + bidIncrement}.`);
+            setShowSnackbar(true);
+            return;
+        }
+        if (desired > team.remainingBudget) {
+            setSnackbarMessage('Jump bid exceeds team remaining budget.');
+            setShowSnackbar(true);
+            return;
+        }
+        setBids([{ id: Date.now(), playerId: selectedPlayer.id, teamId: team.id, teamName: team.name, amount: desired }, ...bids]);
+        setSelectedPlayer({ ...selectedPlayer, currentPrice: desired });
     };
 
     const handleMarkSold = async () => {
@@ -91,6 +140,7 @@ const Auction = () => {
         setTimeout(async () => {
             setShowStatusOverlay(false);
             await refreshAvailablePlayers();
+            await refreshTeams();
         }, 1500);
     };
 
@@ -106,6 +156,7 @@ const Auction = () => {
             setTimeout(async () => {
                 setShowStatusOverlay(false);
                 await refreshAvailablePlayers();
+                await refreshTeams();
             }, 1500);
         }
     };
@@ -119,6 +170,11 @@ const Auction = () => {
             setSelectedPlayer(players[0] || null);
         }
     }, [auctionId, selectedPlayer]);
+
+    const refreshTeams = useCallback(async () => {
+        const teamsData = await teamService.getByAuction(auctionId);
+        setTeams(teamsData || []);
+    }, [auctionId]);
 
     useEffect(() => {
         let mounted = true;
@@ -137,7 +193,8 @@ const Auction = () => {
                     setTeams(teamsData || []);
                     setAuction(auctionData);
                     if (!selectedPlayer && playersData && playersData.length > 0) {
-                        setSelectedPlayer(playersData[0]);
+                        const idx = Math.floor(Math.random() * playersData.length);
+                        setSelectedPlayer(playersData[idx]);
                     }
                 }
             } catch (error) {
@@ -199,12 +256,18 @@ const Auction = () => {
     };
 
     const handleUndoLastBid = () => {
-        if (Array.isArray(bids) && bids.length > 0 && selectedPlayer) {
-            const idx = bids.findIndex(bid => bid.playerId === selectedPlayer.id);
-            if (idx !== -1) {
-                setBids(bids.filter((_, i) => i !== idx));
-            }
-        }
+        if (!Array.isArray(bids) || bids.length === 0 || !selectedPlayer) return;
+        setBids((prevBids) => {
+            const idx = prevBids.findIndex(bid => bid.playerId === selectedPlayer.id);
+            if (idx === -1) return prevBids;
+
+            const nextBids = prevBids.filter((_, i) => i !== idx);
+            const nextBidForPlayer = nextBids.find(bid => bid.playerId === selectedPlayer.id);
+            const newPrice = nextBidForPlayer ? nextBidForPlayer.amount : 0;
+            setSelectedPlayer({ ...selectedPlayer, currentPrice: newPrice });
+
+            return nextBids;
+        });
     };
 
     if (loading) {
@@ -256,10 +319,56 @@ const Auction = () => {
                 <Button variant="outlined" color="secondary" onClick={handleUndoLastBid} disabled={bids.length === 0 || !selectedPlayer}>
                     Undo Last Bid
                 </Button>
+                <Button variant="outlined" onClick={() => setShowJumpBid((prev) => !prev)}>
+                    {showJumpBid ? 'Hide Jump Bid' : 'Show Jump Bid'}
+                </Button>
                 <Button variant="outlined" onClick={() => navigate(-1)} sx={{ ml: 2 }}>
                     Back
                 </Button>
             </Box>
+            {showJumpBid && (
+                <Box display="flex" justifyContent="center" gap={2} mb={2} flexWrap="wrap">
+                    <TextField
+                        label="Jump Bid Amount"
+                        type="number"
+                        size="small"
+                        value={jumpBidAmount}
+                        onChange={(e) => setJumpBidAmount(e.target.value)}
+                        inputProps={{ min: 0 }}
+                        sx={{ minWidth: 200 }}
+                    />
+                    <TextField
+                        label="Jump Bid Team"
+                        select
+                        size="small"
+                        value={jumpBidTeamId}
+                        onChange={(e) => setJumpBidTeamId(e.target.value)}
+                        SelectProps={{ native: true }}
+                        sx={{ minWidth: 220 }}
+                    >
+                        <option value="" />
+                        {teams.map(team => (
+                            <option key={team.id} value={team.id}>{team.name}</option>
+                        ))}
+                    </TextField>
+                    <Button
+                        variant="outlined"
+                        onClick={() => handleJumpBid(jumpBidTeamId)}
+                        disabled={
+                            !jumpBidTeamId ||
+                            !jumpBidAmount ||
+                            !selectedPlayer ||
+                            selectedPlayer.isSold ||
+                            lastBidTeamId === Number(jumpBidTeamId) ||
+                            !Number.isFinite(Number(jumpBidAmount)) ||
+                            Number(jumpBidAmount) < (selectedPlayer.currentPrice ?? 0) + resolveBidIncrement(selectedPlayer.currentPrice ?? 0) ||
+                            Number(jumpBidAmount) > (teams.find(t => t.id === Number(jumpBidTeamId))?.remainingBudget ?? 0)
+                        }
+                    >
+                        Jump Bid
+                    </Button>
+                </Box>
+            )}
 
             {/* Selected Player Details and Bidding */}
             {selectedPlayer && (
@@ -301,17 +410,42 @@ const Auction = () => {
                     <Box mt={2} textAlign="center">
                         <Typography variant="h5" gutterBottom>Place a Bid</Typography>
                         <Box display="flex" flexWrap="wrap" gap={2} justifyContent="center">
-                            {teams.map(team => (
-                                <Button
-                                    key={team.id}
-                                    variant={lastBidTeamId === team.id ? 'outlined' : 'contained'}
-                                    onClick={() => handleTeamBid(team.id)}
-                                    disabled={selectedPlayer.isSold || lastBidTeamId === team.id || team.remainingBudget < (selectedPlayer.currentPrice || selectedPlayer.basePrice) + (auction?.bidIncreaseBy || 1)}
-                                    startIcon={team.logoUrl ? <Avatar src={team.logoUrl} alt={team.name} sx={{ width: 24, height: 24 }} /> : null}
-                                >
-                                    {team.name}
-                                </Button>
-                            ))}
+                            {teams.map(team => {
+                                const playersCount = team.playersCount ?? 0;
+                                const isFull = auction?.playersPerTeam && playersCount >= auction.playersPerTeam;
+                                return (
+                                    <Button
+                                        key={team.id}
+                                        variant={lastBidTeamId === team.id ? 'outlined' : 'contained'}
+                                        onClick={() => handleTeamBid(team.id)}
+                                        disabled={selectedPlayer.isSold || lastBidTeamId === team.id || team.remainingBudget < (selectedPlayer.currentPrice ?? 0) + resolveBidIncrement(selectedPlayer.currentPrice ?? 0)}
+                                        startIcon={team.logoUrl ? <Avatar src={team.logoUrl} alt={team.name} sx={{ width: 24, height: 24 }} /> : null}
+                                        sx={{ position: 'relative', pr: 4 }}
+                                    >
+                                        {team.name}
+                                        <Box
+                                            component="span"
+                                            sx={{
+                                                position: 'absolute',
+                                                top: 4,
+                                                right: 6,
+                                                minWidth: 18,
+                                                height: 18,
+                                                px: 0.5,
+                                                borderRadius: '999px',
+                                                fontSize: 11,
+                                                lineHeight: '18px',
+                                                textAlign: 'center',
+                                                bgcolor: isFull ? 'error.main' : 'primary.main',
+                                                color: 'primary.contrastText',
+                                                boxShadow: 1
+                                            }}
+                                        >
+                                            {playersCount}
+                                        </Box>
+                                    </Button>
+                                );
+                            })}
                         </Box>
                     </Box>
 

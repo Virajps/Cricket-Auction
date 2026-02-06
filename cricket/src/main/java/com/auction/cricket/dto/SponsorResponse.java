@@ -9,4 +9,4 @@ public class SponsorResponse {
     private String logoUrl;
     private String website;
     private String description;
-} 
+}
