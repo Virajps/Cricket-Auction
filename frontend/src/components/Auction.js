@@ -11,7 +11,9 @@ import {
     Button,
     Snackbar,
     Avatar,
-    Modal
+    Modal,
+    ToggleButton,
+    ToggleButtonGroup
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { teamService, playerService, auctionService } from '../services/api';
@@ -47,6 +49,9 @@ const Auction = () => {
     const [jumpBidAmount, setJumpBidAmount] = useState('');
     const [jumpBidTeamId, setJumpBidTeamId] = useState('');
     const [showJumpBid, setShowJumpBid] = useState(false);
+    const [biddingMode, setBiddingMode] = useState('LIVE');
+    const [directEntryTeamId, setDirectEntryTeamId] = useState('');
+    const [directEntryFinalPrice, setDirectEntryFinalPrice] = useState('');
 
     
     const lastBid = Array.isArray(bids) && bids.find(bid => bid.playerId === selectedPlayer?.id);
@@ -116,6 +121,12 @@ const Auction = () => {
         setBids([{ id: Date.now(), playerId: selectedPlayer.id, teamId: team.id, teamName: team.name, amount: desired }, ...bids]);
         setSelectedPlayer({ ...selectedPlayer, currentPrice: desired });
     };
+    
+    const handleBiddingModeChange = (_, value) => {
+        if (value) {
+            setBiddingMode(value);
+        }
+    };
 
     const handleMarkSold = async () => {
         if (!selectedPlayer) {
@@ -124,40 +135,83 @@ const Auction = () => {
             return;
         }
 
-        if (!lastBid || !lastBid.teamId || typeof lastBid.amount !== 'number' || isNaN(lastBid.amount)) {
-            setSnackbarMessage('Cannot mark as sold: No valid bid or bid amount found for this player.');
-            setShowSnackbar(true);
-            return;
-        }
+        try {
+            let soldTeamId;
+            let soldAmount;
 
-        setStatusOverlayText('SOLD');
-        setShowStatusOverlay(true);
-        setSnackbarMessage(`${selectedPlayer.name} marked as SOLD!`);
-        setShowSnackbar(true);
-        console.log('Sending update status request with:', { teamId: lastBid.teamId, finalBidAmount: lastBid.amount });
-        await playerService.updateStatus(auctionId, selectedPlayer.id, 'SOLD', lastBid.teamId, lastBid.amount);
-        setBids([]);
-        setTimeout(async () => {
-            setShowStatusOverlay(false);
-            await refreshAvailablePlayers();
-            await refreshTeams();
-        }, 1500);
-    };
+            if (biddingMode === 'DIRECT') {
+                soldTeamId = Number(directEntryTeamId);
+                soldAmount = Number(directEntryFinalPrice);
+                const selectedTeam = teams.find((team) => team.id === soldTeamId);
 
-    const handleMarkUnsold = async () => {
-        if (selectedPlayer) {
-            setStatusOverlayText('UNSOLD');
+                if (!soldTeamId || !selectedTeam) {
+                    setSnackbarMessage('Select a team for direct entry.');
+                    setShowSnackbar(true);
+                    return;
+                }
+                if (!Number.isFinite(soldAmount) || soldAmount < 0) {
+                    setSnackbarMessage('Enter a valid final sold price.');
+                    setShowSnackbar(true);
+                    return;
+                }
+                if (soldAmount > selectedTeam.remainingBudget) {
+                    setSnackbarMessage('Final sold price exceeds selected team remaining budget.');
+                    setShowSnackbar(true);
+                    return;
+                }
+            } else {
+                if (!lastBid || !lastBid.teamId || typeof lastBid.amount !== 'number' || isNaN(lastBid.amount)) {
+                    setSnackbarMessage('Cannot mark as sold: No valid bid or bid amount found for this player.');
+                    setShowSnackbar(true);
+                    return;
+                }
+                soldTeamId = lastBid.teamId;
+                soldAmount = lastBid.amount;
+            }
+
+            setStatusOverlayText('SOLD');
             setShowStatusOverlay(true);
-            setSnackbarMessage(`${selectedPlayer.name} marked as UNSOLD!`);
+            setSnackbarMessage(`${selectedPlayer.name} marked as SOLD!`);
             setShowSnackbar(true);
-            console.log('Marking player as UNSOLD:', selectedPlayer.id);
-            await playerService.updateStatus(auctionId, selectedPlayer.id, 'UNSOLD');
+            await playerService.updateStatus(auctionId, selectedPlayer.id, 'SOLD', soldTeamId, soldAmount);
             setBids([]);
+            setDirectEntryTeamId('');
+            setDirectEntryFinalPrice('');
             setTimeout(async () => {
                 setShowStatusOverlay(false);
                 await refreshAvailablePlayers();
                 await refreshTeams();
             }, 1500);
+        } catch (e) {
+            console.error('Failed to mark player as SOLD:', e);
+            setShowStatusOverlay(false);
+            setSnackbarMessage(e?.response?.data?.message || 'Failed to mark player as SOLD.');
+            setShowSnackbar(true);
+        }
+    };
+
+    const handleMarkUnsold = async () => {
+        if (selectedPlayer) {
+            try {
+                setStatusOverlayText('UNSOLD');
+                setShowStatusOverlay(true);
+                setSnackbarMessage(`${selectedPlayer.name} marked as UNSOLD!`);
+                setShowSnackbar(true);
+                await playerService.updateStatus(auctionId, selectedPlayer.id, 'UNSOLD');
+                setBids([]);
+                setDirectEntryTeamId('');
+                setDirectEntryFinalPrice('');
+                setTimeout(async () => {
+                    setShowStatusOverlay(false);
+                    await refreshAvailablePlayers();
+                    await refreshTeams();
+                }, 1500);
+            } catch (e) {
+                console.error('Failed to mark player as UNSOLD:', e);
+                setShowStatusOverlay(false);
+                setSnackbarMessage(e?.response?.data?.message || 'Failed to mark player as UNSOLD.');
+                setShowSnackbar(true);
+            }
         }
     };
 
@@ -255,6 +309,16 @@ const Auction = () => {
         }
     };
 
+    useEffect(() => {
+        if (!selectedPlayer) {
+            setDirectEntryTeamId('');
+            setDirectEntryFinalPrice('');
+            return;
+        }
+        setDirectEntryTeamId('');
+        setDirectEntryFinalPrice(String(selectedPlayer.currentPrice ?? selectedPlayer.basePrice ?? auction?.basePrice ?? ''));
+    }, [selectedPlayer, auction?.basePrice]);
+
     const handleUndoLastBid = () => {
         if (!Array.isArray(bids) || bids.length === 0 || !selectedPlayer) return;
         setBids((prevBids) => {
@@ -289,7 +353,7 @@ const Auction = () => {
     const lastBidTeam = teams.find(team => team.id === lastBid?.teamId);
 
     return (
-        <Container maxWidth="lg" sx={{ py: 2 }}>
+        <Container maxWidth="xl" sx={{ py: 2 }}>
                         <Box display="flex" alignItems="center" justifyContent="center" mb={0}>
                 {auction?.logoUrl && (
                     <Avatar src={auction.logoUrl} alt={auction.name} sx={{ width: 60, height: 60, mr: 2 }} />
@@ -314,19 +378,33 @@ const Auction = () => {
                     renderInput={(params) => (
                         <TextField {...params} label="Search Player" variant="outlined" size="small" />
                     )}
-                    sx={{ minWidth: 250 }}
+                    sx={{ minWidth: 320 }}
                 />
-                <Button variant="outlined" color="secondary" onClick={handleUndoLastBid} disabled={bids.length === 0 || !selectedPlayer}>
-                    Undo Last Bid
-                </Button>
-                <Button variant="outlined" onClick={() => setShowJumpBid((prev) => !prev)}>
-                    {showJumpBid ? 'Hide Jump Bid' : 'Show Jump Bid'}
-                </Button>
+                {biddingMode === 'LIVE' && (
+                    <Button variant="outlined" color="secondary" onClick={handleUndoLastBid} disabled={bids.length === 0 || !selectedPlayer}>
+                        Undo Last Bid
+                    </Button>
+                )}
+                {biddingMode === 'LIVE' && (
+                    <Button variant="outlined" onClick={() => setShowJumpBid((prev) => !prev)}>
+                        {showJumpBid ? 'Hide Jump Bid' : 'Show Jump Bid'}
+                    </Button>
+                )}
+                <ToggleButtonGroup
+                    size="small"
+                    color="primary"
+                    exclusive
+                    value={biddingMode}
+                    onChange={handleBiddingModeChange}
+                >
+                    <ToggleButton value="LIVE">Live Bidding</ToggleButton>
+                    <ToggleButton value="DIRECT">Direct Entry</ToggleButton>
+                </ToggleButtonGroup>
                 <Button variant="outlined" onClick={() => navigate(-1)} sx={{ ml: 2 }}>
                     Back
                 </Button>
             </Box>
-            {showJumpBid && (
+            {biddingMode === 'LIVE' && showJumpBid && (
                 <Box display="flex" justifyContent="center" gap={2} mb={2} flexWrap="wrap">
                     <TextField
                         label="Jump Bid Amount"
@@ -372,31 +450,81 @@ const Auction = () => {
 
             {/* Selected Player Details and Bidding */}
             {selectedPlayer && (
-                <Card elevation={3} sx={{ p: 2 }}>
-                    <Grid container spacing={0} alignItems="center">
+                <Card elevation={3} sx={{ p: { xs: 2, md: 3 }, width: '100%', borderRadius: 3 }}>
+                    <Grid container spacing={3} alignItems="flex-start">
                         <Grid item xs={12} md={4} textAlign="center">
                             <Avatar 
                                 src={selectedPlayer.photoUrl || 'https://via.placeholder.com/250'} 
                                 alt={selectedPlayer.name} 
-                                sx={{ width: 300, height: 300, mx: 'auto', mb: 2, cursor: 'pointer' }} 
+                                variant="rounded"
+                                sx={{
+                                    width: { xs: 340, md: 420 },
+                                    height: { xs: 340, md: 420 },
+                                    borderRadius: 3,
+                                    mx: 'auto',
+                                    mb: 1,
+                                    cursor: 'pointer'
+                                }} 
                                 onClick={() => setShowPhotoModal(true)}
                             />
-                            <Typography variant="h4" component="h2">{selectedPlayer.name}</Typography>
-                            <Typography variant="h6" color="text.secondary">{selectedPlayer.role}</Typography>
-                            <Typography variant="body1" color="text.secondary">{selectedPlayer.nationality}</Typography>
+                            <Box
+                                sx={{
+                                    mt: 1.5,
+                                    px: 1.5,
+                                    py: 1,
+                                    borderRadius: 2,
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    display: 'inline-block',
+                                    minWidth: { xs: 260, md: 300 }
+                                }}
+                            >
+                                <Typography variant="h4" component="h2">{selectedPlayer.name}</Typography>
+                                <Typography variant="h6" color="text.secondary">{selectedPlayer.role}</Typography>
+                            </Box>
                         </Grid>
 
-                        <Grid item xs={12} md={8} textAlign="center">
-                            <Box display="flex" justifyContent="space-around" alignItems="center" height="100%">
-                                <Box display="flex" flexDirection="column" alignItems="center">
+                        <Grid item xs={12} md={8}>
+                            <Box
+                                display="flex"
+                                justifyContent={{ xs: 'center', md: 'flex-start' }}
+                                alignItems="stretch"
+                                gap={2}
+                                flexWrap="wrap"
+                                py={0.5}
+                                sx={{ width: '100%' }}
+                            >
+                                <Box
+                                    sx={{
+                                        flex: 1,
+                                        minWidth: { xs: '100%', sm: 220 },
+                                        px: 2,
+                                        py: 1.5,
+                                        borderRadius: 2,
+                                        border: '1px solid',
+                                        borderColor: 'divider',
+                                        bgcolor: 'background.paper'
+                                    }}
+                                >
                                     <Typography variant="h6" color="text.secondary">Base Price</Typography>
                                     <Typography variant="h4">₹{auction.basePrice?.toLocaleString()}</Typography>
                                 </Box>
-                                <Box display="flex" flexDirection="column" alignItems="center">
+                                <Box
+                                    sx={{
+                                        flex: 1,
+                                        minWidth: { xs: '100%', sm: 260 },
+                                        px: 2,
+                                        py: 1.5,
+                                        borderRadius: 2,
+                                        border: '1px solid',
+                                        borderColor: 'divider',
+                                        bgcolor: 'background.paper'
+                                    }}
+                                >
                                     <Typography variant="h6" color="text.secondary">Current Bid</Typography>
                                     <Typography variant="h3" color="primary">₹{(selectedPlayer.currentPrice || selectedPlayer.basePrice)?.toLocaleString()}</Typography>
                                     {lastBidTeam && (
-                                        <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
+                                        <Box display="flex" alignItems="center" justifyContent={{ xs: 'center', md: 'flex-start' }} gap={1}>
                                             <Avatar src={lastBidTeam.logoUrl} alt={lastBidTeam.name} sx={{ width: 32, height: 32 }} />
                                             <Typography variant="h6">{lastBidTeam.name}</Typography>
                                         </Box>
@@ -404,62 +532,114 @@ const Auction = () => {
                                     {!lastBidTeam && <Typography variant="body2" color="text.secondary">No bids yet</Typography>}
                                 </Box>
                             </Box>
+                            {biddingMode === 'LIVE' ? (
+                                <Box mt={2.5} sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                                    <Typography variant="h5" gutterBottom textAlign={{ xs: 'center', md: 'left' }}>Place a Bid</Typography>
+                                    <Box display="flex" flexWrap="wrap" gap={1.5} justifyContent={{ xs: 'center', md: 'flex-start' }}>
+                                        {teams.map(team => {
+                                            const playersCount = team.playersCount ?? 0;
+                                            const isFull = auction?.playersPerTeam && playersCount >= auction.playersPerTeam;
+                                            return (
+                                                <Button
+                                                    key={team.id}
+                                                    variant={lastBidTeamId === team.id ? 'outlined' : 'contained'}
+                                                    onClick={() => handleTeamBid(team.id)}
+                                                    disabled={selectedPlayer.isSold || lastBidTeamId === team.id || team.remainingBudget < (selectedPlayer.currentPrice ?? 0) + resolveBidIncrement(selectedPlayer.currentPrice ?? 0)}
+                                                    startIcon={team.logoUrl ? <Avatar src={team.logoUrl} alt={team.name} sx={{ width: 24, height: 24 }} /> : null}
+                                                    sx={{ position: 'relative', pr: 4, minWidth: 140 }}
+                                                >
+                                                    {team.name}
+                                                    <Box
+                                                        component="span"
+                                                        sx={{
+                                                            position: 'absolute',
+                                                            top: 4,
+                                                            right: 6,
+                                                            minWidth: 18,
+                                                            height: 18,
+                                                            px: 0.5,
+                                                            borderRadius: '999px',
+                                                            fontSize: 11,
+                                                            lineHeight: '18px',
+                                                            textAlign: 'center',
+                                                            bgcolor: isFull ? 'error.main' : 'primary.main',
+                                                            color: 'primary.contrastText',
+                                                            boxShadow: 1
+                                                        }}
+                                                    >
+                                                        {playersCount}
+                                                    </Box>
+                                                </Button>
+                                            );
+                                        })}
+                                    </Box>
+                                </Box>
+                            ) : (
+                                <Box mt={2.5} sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                                    <Typography variant="h5" gutterBottom textAlign={{ xs: 'center', md: 'left' }}>Direct Sold Entry</Typography>
+                                    <Box display="flex" justifyContent={{ xs: 'center', md: 'flex-start' }} gap={2} flexWrap="wrap">
+                                        <TextField
+                                            label="Team"
+                                            select
+                                            size="small"
+                                            value={directEntryTeamId}
+                                            onChange={(e) => setDirectEntryTeamId(e.target.value)}
+                                            SelectProps={{ native: true }}
+                                            sx={{ minWidth: 230 }}
+                                        >
+                                            <option value="" />
+                                            {teams.map(team => (
+                                                <option key={team.id} value={team.id}>
+                                                    {team.name}
+                                                </option>
+                                            ))}
+                                        </TextField>
+                                        <TextField
+                                            label="Final Sold Price"
+                                            type="number"
+                                            size="small"
+                                            value={directEntryFinalPrice}
+                                            onChange={(e) => setDirectEntryFinalPrice(e.target.value)}
+                                            inputProps={{ min: 0 }}
+                                            sx={{ minWidth: 230 }}
+                                        />
+                                    </Box>
+                                </Box>
+                            )}
+
+                            <Box mt={2.5} display="flex" justifyContent={{ xs: 'center', md: 'flex-start' }} gap={2} flexWrap="wrap">
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    onClick={handleMarkSold}
+                                    disabled={
+                                        playerStatus === 'Sold' ||
+                                        (biddingMode === 'LIVE'
+                                            ? bids.length === 0
+                                            : !directEntryTeamId ||
+                                            !Number.isFinite(Number(directEntryFinalPrice)) ||
+                                            Number(directEntryFinalPrice) < 0 ||
+                                            Number(directEntryFinalPrice) > (teams.find(t => t.id === Number(directEntryTeamId))?.remainingBudget ?? 0))
+                                    }
+                                    sx={{ minWidth: 160 }}
+                                >
+                                    Mark as Sold
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    color="warning"
+                                    onClick={handleMarkUnsold}
+                                    disabled={playerStatus === 'Unsold' || (biddingMode === 'LIVE' && bids.length > 0)}
+                                    sx={{ minWidth: 160 }}
+                                >
+                                    Mark as Unsold
+                                </Button>
+                            </Box>
+                            <Typography variant="h6" textAlign={{ xs: 'center', md: 'left' }} mt={1.5} color={playerStatus === 'Sold' ? 'success.main' : playerStatus === 'Unsold' ? 'warning.main' : 'text.primary'}>
+                                Status: {playerStatus}
+                            </Typography>
                         </Grid>
                     </Grid>
-
-                    <Box mt={2} textAlign="center">
-                        <Typography variant="h5" gutterBottom>Place a Bid</Typography>
-                        <Box display="flex" flexWrap="wrap" gap={2} justifyContent="center">
-                            {teams.map(team => {
-                                const playersCount = team.playersCount ?? 0;
-                                const isFull = auction?.playersPerTeam && playersCount >= auction.playersPerTeam;
-                                return (
-                                    <Button
-                                        key={team.id}
-                                        variant={lastBidTeamId === team.id ? 'outlined' : 'contained'}
-                                        onClick={() => handleTeamBid(team.id)}
-                                        disabled={selectedPlayer.isSold || lastBidTeamId === team.id || team.remainingBudget < (selectedPlayer.currentPrice ?? 0) + resolveBidIncrement(selectedPlayer.currentPrice ?? 0)}
-                                        startIcon={team.logoUrl ? <Avatar src={team.logoUrl} alt={team.name} sx={{ width: 24, height: 24 }} /> : null}
-                                        sx={{ position: 'relative', pr: 4 }}
-                                    >
-                                        {team.name}
-                                        <Box
-                                            component="span"
-                                            sx={{
-                                                position: 'absolute',
-                                                top: 4,
-                                                right: 6,
-                                                minWidth: 18,
-                                                height: 18,
-                                                px: 0.5,
-                                                borderRadius: '999px',
-                                                fontSize: 11,
-                                                lineHeight: '18px',
-                                                textAlign: 'center',
-                                                bgcolor: isFull ? 'error.main' : 'primary.main',
-                                                color: 'primary.contrastText',
-                                                boxShadow: 1
-                                            }}
-                                        >
-                                            {playersCount}
-                                        </Box>
-                                    </Button>
-                                );
-                            })}
-                        </Box>
-                    </Box>
-
-                    <Box mt={2} display="flex" justifyContent="center" gap={2}>
-                        <Button variant="contained" color="success" onClick={handleMarkSold} disabled={playerStatus === 'Sold' || bids.length === 0}>
-                            Mark as Sold
-                        </Button>
-                        <Button variant="contained" color="warning" onClick={handleMarkUnsold} disabled={playerStatus === 'Unsold' || bids.length > 0}>
-                            Mark as Unsold
-                        </Button>
-                    </Box>
-                    <Typography variant="h6" textAlign="center" mt={2} color={playerStatus === 'Sold' ? 'success.main' : playerStatus === 'Unsold' ? 'warning.main' : 'text.primary'}>
-                        Status: {playerStatus}
-                    </Typography>
                 </Card>
             )}
 
