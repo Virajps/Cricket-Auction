@@ -30,6 +30,8 @@ const PlayerDetailsCard = ({ open, handleClose, player }) => {
         );
     }
 
+    const ageDisplay = player.age == null || player.age <= 0 ? 'NA' : player.age;
+
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
             <DialogTitle>
@@ -51,7 +53,7 @@ const PlayerDetailsCard = ({ open, handleClose, player }) => {
                                     </ListItem>
                                 )}
                                 <ListItem>
-                                    <ListItemText primary={`Age: ${player.age}`} />
+                                    <ListItemText primary={`Age: ${ageDisplay}`} />
                                 </ListItem>
                                 <ListItem>
                                     <ListItemText primary={`Base Price: ₹${player.basePrice?.toLocaleString()}`} />

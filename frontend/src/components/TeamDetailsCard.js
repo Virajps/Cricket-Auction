@@ -17,6 +17,7 @@ import {
     Chip,
     Alert,
     DialogContentText,
+    TextField,
 } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
 import { playerService, teamService } from '../services/api';
@@ -28,10 +29,12 @@ const TeamDetailsCard = ({ open, handleClose, team, players, auctionId, auction,
     const [availablePlayers, setAvailablePlayers] = React.useState([]);
     const [iconLoading, setIconLoading] = React.useState(false);
     const [iconError, setIconError] = React.useState(null);
+    const [iconSearchQuery, setIconSearchQuery] = React.useState('');
 
     const openIconDialog = async () => {
         setIconDialogOpen(true);
         setIconError(null);
+        setIconSearchQuery('');
         setIconLoading(true);
         try {
             try {
@@ -54,7 +57,12 @@ const TeamDetailsCard = ({ open, handleClose, team, players, auctionId, auction,
         setIconDialogOpen(false);
         setAvailablePlayers([]);
         setIconError(null);
+        setIconSearchQuery('');
     };
+
+    const filteredAvailablePlayers = availablePlayers.filter((player) =>
+        (player.name || '').toLowerCase().includes(iconSearchQuery.trim().toLowerCase())
+    );
 
     const handleAddIconPlayer = async (player) => {
         try {
@@ -378,11 +386,24 @@ const TeamDetailsCard = ({ open, handleClose, team, players, auctionId, auction,
                             {iconError}
                         </Alert>
                     )}
+                    {!iconLoading && availablePlayers.length > 0 && (
+                        <TextField
+                            fullWidth
+                            size="small"
+                            label="Search player by name"
+                            value={iconSearchQuery}
+                            onChange={(e) => setIconSearchQuery(e.target.value)}
+                            sx={{ mb: 2 }}
+                        />
+                    )}
                     {!iconLoading && availablePlayers.length === 0 && (
                         <Alert severity="info">No available players found.</Alert>
                     )}
+                    {!iconLoading && availablePlayers.length > 0 && filteredAvailablePlayers.length === 0 && (
+                        <Alert severity="info">No players match your search.</Alert>
+                    )}
                     <List>
-                        {availablePlayers.map((player) => (
+                        {filteredAvailablePlayers.map((player) => (
                             <Card key={player.id} sx={{ mb: 2 }}>
                                 <CardContent>
                                     <Grid container spacing={2} alignItems="center">

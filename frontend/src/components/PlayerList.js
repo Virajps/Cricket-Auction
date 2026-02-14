@@ -67,9 +67,15 @@ const PlayerList = () => {
     const [selectedPlayer, setSelectedPlayer] = useState(null);
     const [activeTab, setActiveTab] = useState(0);
 
+    const normalizeText = (value) => (value || '')
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, ' ');
+
     const filteredPlayers = players.filter(player => {
         const statusMatch = statusFilter === 'ALL' || player.status === statusFilter;
-        const nameMatch = player.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const nameMatch = normalizeText(player.name).includes(normalizeText(searchQuery));
         return statusMatch && nameMatch;
     });
 
@@ -80,6 +86,17 @@ const PlayerList = () => {
     const handlePageChange = (event, value) => {
         setCurrentPage(value);
     };
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, statusFilter]);
+
+    useEffect(() => {
+        const totalPages = Math.max(1, Math.ceil(filteredPlayers.length / playersPerPage));
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [filteredPlayers.length, playersPerPage, currentPage]);
 
     const fetchAuction = useCallback(async () => {
         try {
@@ -313,9 +330,11 @@ const PlayerList = () => {
                                                             size="small"
                                                         />
                                                     </Box>
-                                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                                        Age: {player.age}{player.mobileNumber && ` | ${player.mobileNumber}`}
-                                                    </Typography>
+                                                    {player.mobileNumber && (
+                                                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                                                            Mobile: {player.mobileNumber}
+                                                        </Typography>
+                                                    )}
                                                     {player.description && (
                                                         <Typography variant="body2" color="text.secondary">
                                                             {player.description}

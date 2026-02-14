@@ -42,6 +42,7 @@ public class PlayerService {
         player.setRole(request.getRole());
         player.setCurrentPrice(auction.getBasePrice());
         player.setPhotoUrl(request.getPhotoUrl());
+        player.setMobileNumber(request.getMobileNumber());
         player.setAuction(auction);
         if (request.getStatus() != null) {
             player.setStatus(PlayerStatus.valueOf(request.getStatus()));
@@ -111,6 +112,7 @@ public class PlayerService {
         player.setAge(request.getAge());
         player.setRole(request.getRole());
         player.setPhotoUrl(request.getPhotoUrl());
+        player.setMobileNumber(request.getMobileNumber());
         if (request.getStatus() != null) {
             player.setStatus(PlayerStatus.valueOf(request.getStatus()));
         }
@@ -250,6 +252,7 @@ public class PlayerService {
         response.setName(player.getName());
         response.setAge(player.getAge());
         response.setRole(player.getRole());
+        response.setMobileNumber(player.getMobileNumber());
         if (player.getTeam() != null) {
             response.setTeamName(player.getTeam().getName());
         }
