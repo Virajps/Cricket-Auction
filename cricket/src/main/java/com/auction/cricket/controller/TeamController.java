@@ -66,9 +66,9 @@ public class TeamController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTeam(@PathVariable Long id) {
-        logger.debug("Received request to delete team: {}", id);
-        teamService.deleteTeam(id);
+    public ResponseEntity<Void> deleteTeam(@PathVariable Long auctionId, @PathVariable Long id) {
+        logger.debug("Received request to delete team: {} in auction: {}", id, auctionId);
+        teamService.deleteTeam(auctionId, id);
         return ResponseEntity.ok().build();
     }
 
@@ -76,12 +76,6 @@ public class TeamController {
     public ResponseEntity<TeamResponse> updateBudget(@PathVariable Long id, @RequestBody Double budget) {
         logger.debug("Received request to update budget for team id: {} to: {}", id, budget);
         return ResponseEntity.ok(teamService.updateBudget(id, budget));
-    }
-
-    @PutMapping("/{id}/toggle-status")
-    public ResponseEntity<TeamResponse> toggleStatus(@PathVariable Long id) {
-        logger.debug("Received request to toggle status for team: {}", id);
-        return ResponseEntity.ok(teamService.toggleStatus(id));
     }
 
     @PostMapping("/{teamId}/icon-players/{playerId}")

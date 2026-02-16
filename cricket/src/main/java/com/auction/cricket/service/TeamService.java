@@ -14,6 +14,7 @@ import com.auction.cricket.entity.Auction;
 import com.auction.cricket.entity.Team;
 import com.auction.cricket.exception.ResourceNotFoundException;
 import com.auction.cricket.repository.AuctionRepository;
+import com.auction.cricket.repository.BidRepository;
 import com.auction.cricket.repository.PlayerRepository;
 import com.auction.cricket.repository.TeamRepository;
 import com.auction.cricket.repository.UserRepository;
@@ -26,13 +27,15 @@ public class TeamService {
     private final UserRepository userRepository;
     private final AuctionRepository auctionRepository;
     private final PlayerRepository playerRepository;
+    private final BidRepository bidRepository;
 
     public TeamService(TeamRepository teamRepository, UserRepository userRepository,
-            AuctionRepository auctionRepository, PlayerRepository playerRepository) {
+            AuctionRepository auctionRepository, PlayerRepository playerRepository, BidRepository bidRepository) {
         this.teamRepository = teamRepository;
         this.userRepository = userRepository;
         this.auctionRepository = auctionRepository;
         this.playerRepository = playerRepository;
+        this.bidRepository = bidRepository;
     }
 
     @Transactional(readOnly = true)
@@ -123,15 +126,18 @@ public class TeamService {
     }
 
     @Transactional
-    public void deleteTeam(Long id) {
-        logger.debug("Deleting team with id: {}", id);
+    public void deleteTeam(Long auctionId, Long id) {
+        logger.debug("Deleting team with id: {} in auction: {}", id, auctionId);
         Team team = teamRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + id));
+        if (!team.getAuction().getId().equals(auctionId)) {
+            throw new ResourceNotFoundException("Team not found in auction with id: " + auctionId);
+        }
 
         // Disassociate players from the team
         team.getPlayers().forEach(player -> player.setTeam(null));
-        // Disassociate bids from the team
-        team.getBids().forEach(bid -> bid.setTeam(null));
+        // Remove bids since bid.team is non-nullable
+        bidRepository.deleteByTeamId(id);
 
         teamRepository.delete(team);
     }
@@ -149,17 +155,6 @@ public class TeamService {
         team.setBudgetAmount(budget);
         int pointsUsed = team.getPointsUsed() != null ? team.getPointsUsed() : 0;
         team.setRemainingBudget(budget - pointsUsed);
-        team = teamRepository.save(team);
-        return mapToResponse(team);
-    }
-
-    @Transactional
-    public TeamResponse toggleStatus(Long id) {
-        logger.debug("Toggling status for team with id: {}", id);
-        Team team = teamRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + id));
-
-        team.setIsActive(!team.getIsActive());
         team = teamRepository.save(team);
         return mapToResponse(team);
     }

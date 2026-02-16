@@ -20,7 +20,6 @@ import {
 import {
     Edit as EditIcon,
     Delete as DeleteIcon,
-    PowerSettingsNew as PowerSettingsNewIcon,
     Add as AddIcon,
     People as PeopleIcon,
     AttachMoney as MoneyIcon,
@@ -79,22 +78,12 @@ const TeamList = () => {
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this team?')) {
             try {
-                await teamService.delete(id);
+                await teamService.delete(auctionId, id);
                 fetchData();
             } catch (err) {
                 console.error('Error deleting team:', err);
                 setError(err.response?.data?.message || 'Failed to delete team');
             }
-        }
-    };
-
-    const handleToggleStatus = async (id) => {
-        try {
-            await teamService.toggleStatus(id);
-            fetchData();
-        } catch (err) {
-            console.error('Error toggling status:', err);
-            setError(err.response?.data?.message || 'Failed to toggle status');
         }
     };
 
@@ -288,15 +277,6 @@ const TeamList = () => {
                                                             onClick={() => handleDelete(team.id)}
                                                         >
                                                             <DeleteIcon />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                    <Tooltip title="Toggle Status">
-                                                        <IconButton
-                                                            size="small"
-                                                            color={team.isActive ? 'success' : 'default'}
-                                                            onClick={() => handleToggleStatus(team.id)}
-                                                        >
-                                                            <PowerSettingsNewIcon />
                                                         </IconButton>
                                                     </Tooltip>
                                                 </Box>

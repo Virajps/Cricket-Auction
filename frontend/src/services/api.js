@@ -144,16 +144,12 @@ export const teamService = {
         const response = await api.put(`auctions/${auctionId}/teams/${id}`, teamData);
         return response.data;
     },
-    delete: async (id) => {
-        const response = await api.delete(`/teams/${id}`);
+    delete: async (auctionId, id) => {
+        const response = await api.delete(`/auctions/${auctionId}/teams/${id}`);
         return response.data;
     },
     getByAuction: async (auctionId) => {
         const response = await api.get(`/auctions/${auctionId}/teams`);
-        return response.data;
-    },
-    toggleStatus: async (id) => {
-        const response = await api.put(`/teams/${id}/toggle-status`);
         return response.data;
     },
     updateBudget: async (id, budget) => {

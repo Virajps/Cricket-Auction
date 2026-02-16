@@ -13,6 +13,8 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
     List<Bid> findByPlayerIdAndPlayerAuctionIdOrderByAmountDesc(Long playerId, Long auctionId);
     List<Bid> findByPlayerAuctionIdOrderByAmountDesc(Long auctionId);
     List<Bid> findByTeamId(Long teamId);
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    void deleteByTeamId(Long teamId);
     Bid findTopByPlayerIdOrderByAmountDesc(Long playerId);
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     void deleteByPlayerAuctionId(Long auctionId);

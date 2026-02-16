@@ -8,8 +8,6 @@ import {
     Box,
     Grid,
     CircularProgress,
-    FormControlLabel,
-    Switch,
     Divider,
     Card,
     CardContent,
@@ -67,10 +65,10 @@ const TeamForm = () => {
     const fetchTeam = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await teamService.getById(id);
+            const response = await teamService.getById(id, auctionId);
             setFormData({
                 name: response.name,
-                isActive: response.isActive,
+                isActive: true,
                 logoUrl: response.logoUrl || ''
             });
         } catch (error) {
@@ -83,7 +81,7 @@ const TeamForm = () => {
         } finally {
             setLoading(false);
         }
-    }, [id]);
+    }, [id, auctionId]);
 
     useEffect(() => {
         fetchAuction();
@@ -284,22 +282,6 @@ const TeamForm = () => {
                                     </Box>
                                 )}
                             </Grid>
-
-                            {id && (
-                                <Grid item xs={12}>
-                                    <FormControlLabel
-                                        control={
-                                            <Switch
-                                                checked={formData.isActive}
-                                                onChange={handleChange}
-                                                name="isActive"
-                                                color="primary"
-                                            />
-                                        }
-                                        label="Team Active"
-                                    />
-                                </Grid>
-                            )}
 
                             <Grid item xs={12}>
                                 <Divider sx={{ my: 2 }} />
