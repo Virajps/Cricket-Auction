@@ -50,6 +50,8 @@ export const AuthProvider = ({ children }) => {
                         setUser(null);
                     }
                 }
+            } else {
+                authService.setAuthToken(null);
             }
         } catch (error) {
             console.error('Error initializing auth:', error);

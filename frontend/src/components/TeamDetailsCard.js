@@ -30,6 +30,13 @@ const TeamDetailsCard = ({ open, handleClose, team, players, auctionId, auction,
     const [iconLoading, setIconLoading] = React.useState(false);
     const [iconError, setIconError] = React.useState(null);
     const [iconSearchQuery, setIconSearchQuery] = React.useState('');
+    const [removeError, setRemoveError] = React.useState(null);
+    const [directAddDialogOpen, setDirectAddDialogOpen] = React.useState(false);
+    const [directAddPlayers, setDirectAddPlayers] = React.useState([]);
+    const [directAddLoading, setDirectAddLoading] = React.useState(false);
+    const [directAddError, setDirectAddError] = React.useState(null);
+    const [directAddSearchQuery, setDirectAddSearchQuery] = React.useState('');
+    const [directAddPriceByPlayer, setDirectAddPriceByPlayer] = React.useState({});
 
     const openIconDialog = async () => {
         setIconDialogOpen(true);
@@ -60,8 +67,42 @@ const TeamDetailsCard = ({ open, handleClose, team, players, auctionId, auction,
         setIconSearchQuery('');
     };
 
+    const openDirectAddDialog = async () => {
+        setDirectAddDialogOpen(true);
+        setDirectAddError(null);
+        setDirectAddSearchQuery('');
+        setDirectAddLoading(true);
+        setDirectAddPriceByPlayer({});
+        try {
+            const available = await playerService.getAvailable(auctionId);
+            const nextPlayers = available || [];
+            setDirectAddPlayers(nextPlayers);
+            const defaults = {};
+            nextPlayers.forEach((p) => {
+                defaults[p.id] = String(p.currentPrice ?? auction?.basePrice ?? 0);
+            });
+            setDirectAddPriceByPlayer(defaults);
+        } catch (err) {
+            console.error('Error fetching available players for direct add:', err);
+            setDirectAddError('Failed to load available players.');
+        } finally {
+            setDirectAddLoading(false);
+        }
+    };
+
+    const closeDirectAddDialog = () => {
+        setDirectAddDialogOpen(false);
+        setDirectAddPlayers([]);
+        setDirectAddError(null);
+        setDirectAddSearchQuery('');
+        setDirectAddPriceByPlayer({});
+    };
+
     const filteredAvailablePlayers = availablePlayers.filter((player) =>
         (player.name || '').toLowerCase().includes(iconSearchQuery.trim().toLowerCase())
+    );
+    const filteredDirectAddPlayers = directAddPlayers.filter((player) =>
+        (player.name || '').toLowerCase().includes(directAddSearchQuery.trim().toLowerCase())
     );
 
     const handleAddIconPlayer = async (player) => {
@@ -95,6 +136,45 @@ const TeamDetailsCard = ({ open, handleClose, team, players, auctionId, auction,
         } catch (err) {
             console.error('Error removing icon player:', err);
             setIconError(err.response?.data?.message || 'Failed to remove icon player.');
+        }
+    };
+
+    const handleRemovePlayerFromTeam = async (player) => {
+        try {
+            setRemoveError(null);
+            const updated = await teamService.removePlayerFromTeam(auctionId, team.id, player.id);
+            const nextPlayers = players.filter((p) => p.id !== updated.id);
+            onPlayersUpdated(nextPlayers);
+            setAvailablePlayers((prev) => {
+                if (prev.some((p) => p.id === updated.id)) return prev;
+                return [updated, ...prev];
+            });
+            if (onTeamUpdated) {
+                onTeamUpdated();
+            }
+        } catch (err) {
+            console.error('Error removing player from team:', err);
+            setRemoveError(err.response?.data?.message || 'Failed to remove player from team.');
+        }
+    };
+
+    const handleDirectAddPlayer = async (player) => {
+        try {
+            setDirectAddError(null);
+            const priceValue = Number(directAddPriceByPlayer[player.id]);
+            if (!Number.isFinite(priceValue) || priceValue < 0) {
+                setDirectAddError('Enter a valid final sold price.');
+                return;
+            }
+            const added = await teamService.addPlayerToTeam(auctionId, team.id, player.id, priceValue);
+            onPlayersUpdated([...players, added]);
+            setDirectAddPlayers((prev) => prev.filter((p) => p.id !== player.id));
+            if (onTeamUpdated) {
+                onTeamUpdated();
+            }
+        } catch (err) {
+            console.error('Error directly adding player to team:', err);
+            setDirectAddError(err.response?.data?.message || 'Failed to add player to team.');
         }
     };
 
@@ -273,11 +353,19 @@ const TeamDetailsCard = ({ open, handleClose, team, players, auctionId, auction,
                             <Button variant="outlined" size="small" onClick={handleDownloadPdf}>
                                 Download PDF
                             </Button>
+                            <Button variant="contained" size="small" color="success" onClick={openDirectAddDialog}>
+                                Direct Add Player
+                            </Button>
                             <Button variant="contained" size="small" onClick={openIconDialog}>
                                 Add Icon Player
                             </Button>
                         </Box>
                     </Box>
+                    {removeError && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {removeError}
+                        </Alert>
+                    )}
                     <List>
                         {[...players]
                             .sort((a, b) => (b.isIcon === true) - (a.isIcon === true))
@@ -358,6 +446,18 @@ const TeamDetailsCard = ({ open, handleClose, team, players, auctionId, auction,
                                                 </Button>
                                             </Grid>
                                         )}
+                                        {!player.isIcon && (
+                                            <Grid item>
+                                                <Button
+                                                    variant="outlined"
+                                                    size="small"
+                                                    color="error"
+                                                    onClick={() => handleRemovePlayerFromTeam(player)}
+                                                >
+                                                    Remove Player
+                                                </Button>
+                                            </Grid>
+                                        )}
                                     </Grid>
                                 </CardContent>
                             </Card>
@@ -433,6 +533,88 @@ const TeamDetailsCard = ({ open, handleClose, team, players, auctionId, auction,
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={closeIconDialog}>Close</Button>
+                </DialogActions>
+            </Dialog>
+            <Dialog open={directAddDialogOpen} onClose={closeDirectAddDialog} maxWidth="sm" fullWidth>
+                <DialogTitle>Direct Add Player</DialogTitle>
+                <DialogContent>
+                    <DialogContentText sx={{ mb: 2 }}>
+                        Add an available player directly to this team with a final sold price.
+                    </DialogContentText>
+                    {directAddLoading && (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                            <CircularProgress size={24} />
+                        </Box>
+                    )}
+                    {directAddError && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {directAddError}
+                        </Alert>
+                    )}
+                    {!directAddLoading && directAddPlayers.length > 0 && (
+                        <TextField
+                            fullWidth
+                            size="small"
+                            label="Search player by name"
+                            value={directAddSearchQuery}
+                            onChange={(e) => setDirectAddSearchQuery(e.target.value)}
+                            sx={{ mb: 2 }}
+                        />
+                    )}
+                    {!directAddLoading && directAddPlayers.length === 0 && (
+                        <Alert severity="info">No available players found.</Alert>
+                    )}
+                    {!directAddLoading && directAddPlayers.length > 0 && filteredDirectAddPlayers.length === 0 && (
+                        <Alert severity="info">No players match your search.</Alert>
+                    )}
+                    <List>
+                        {filteredDirectAddPlayers.map((player) => (
+                            <Card key={player.id} sx={{ mb: 2 }}>
+                                <CardContent>
+                                    <Grid container spacing={2} alignItems="center">
+                                        <Grid item>
+                                            <Avatar src={player.photoUrl} alt={player.name} sx={{ width: 48, height: 48 }} />
+                                        </Grid>
+                                        <Grid item xs={12} sm>
+                                            <Typography variant="subtitle1">{player.name}</Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {player.role}{player.mobileNumber && ` | ${player.mobileNumber}`}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item xs={12} sm={4}>
+                                            <TextField
+                                                size="small"
+                                                type="number"
+                                                label="Final Price"
+                                                fullWidth
+                                                inputProps={{ min: 0 }}
+                                                value={directAddPriceByPlayer[player.id] ?? ''}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    setDirectAddPriceByPlayer((prev) => ({
+                                                        ...prev,
+                                                        [player.id]: value
+                                                    }));
+                                                }}
+                                            />
+                                        </Grid>
+                                        <Grid item>
+                                            <Button
+                                                variant="outlined"
+                                                size="small"
+                                                onClick={() => handleDirectAddPlayer(player)}
+                                            >
+                                                Add
+                                            </Button>
+                                        </Grid>
+                                    </Grid>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </List>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeDirectAddDialog}>Close</Button>
                 </DialogActions>
             </Dialog>
         </Dialog>

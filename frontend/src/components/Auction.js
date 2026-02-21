@@ -23,6 +23,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Autocomplete from '@mui/material/Autocomplete';
 
 
+const pickRandomPlayer = (list) => {
+    if (!Array.isArray(list) || list.length === 0) return null;
+    const idx = Math.floor(Math.random() * list.length);
+    return list[idx];
+};
 
 const Auction = () => {
     const { id: auctionId } = useParams();
@@ -52,6 +57,7 @@ const Auction = () => {
     const [biddingMode, setBiddingMode] = useState('LIVE');
     const [directEntryTeamId, setDirectEntryTeamId] = useState('');
     const [directEntryFinalPrice, setDirectEntryFinalPrice] = useState('');
+    const [showTeamBudgets, setShowTeamBudgets] = useState(false);
 
     
     const lastBid = Array.isArray(bids) && bids.find(bid => bid.playerId === selectedPlayer?.id);
@@ -219,9 +225,9 @@ const Auction = () => {
         const players = await playerService.getAvailable(auctionId);
         setPlayers(Array.isArray(players) ? players : []);
         if (!selectedPlayer && players && players.length > 0) {
-            setSelectedPlayer(players[0]);
+            setSelectedPlayer(pickRandomPlayer(players));
         } else if (selectedPlayer && !players.find(p => p.id === selectedPlayer.id)) {
-            setSelectedPlayer(players[0] || null);
+            setSelectedPlayer(pickRandomPlayer(players));
         }
     }, [auctionId, selectedPlayer]);
 
@@ -247,8 +253,7 @@ const Auction = () => {
                     setTeams(teamsData || []);
                     setAuction(auctionData);
                     if (!selectedPlayer && playersData && playersData.length > 0) {
-                        const idx = Math.floor(Math.random() * playersData.length);
-                        setSelectedPlayer(playersData[idx]);
+                        setSelectedPlayer(pickRandomPlayer(playersData));
                     }
                 }
             } catch (error) {
@@ -453,19 +458,22 @@ const Auction = () => {
                 <Card elevation={3} sx={{ p: { xs: 2, md: 3 }, width: '100%', borderRadius: 3 }}>
                     <Grid container spacing={3} alignItems="flex-start">
                         <Grid item xs={12} md={4} textAlign="center">
-                            <Avatar 
-                                src={selectedPlayer.photoUrl || 'https://via.placeholder.com/250'} 
-                                alt={selectedPlayer.name} 
-                                variant="rounded"
+                            <Box
+                                component="img"
+                                src={selectedPlayer.photoUrl || 'https://via.placeholder.com/420'}
+                                alt={selectedPlayer.name}
+                                onClick={() => setShowPhotoModal(true)}
                                 sx={{
-                                    width: { xs: 340, md: 420 },
-                                    height: { xs: 340, md: 420 },
+                                    width: '100%',
+                                    maxWidth: { xs: 300, sm: 360, md: 420 },
+                                    aspectRatio: '1 / 1',
+                                    objectFit: 'cover',
                                     borderRadius: 3,
                                     mx: 'auto',
                                     mb: 1,
+                                    display: 'block',
                                     cursor: 'pointer'
-                                }} 
-                                onClick={() => setShowPhotoModal(true)}
+                                }}
                             />
                             <Box
                                 sx={{
@@ -476,7 +484,7 @@ const Auction = () => {
                                     border: '1px solid',
                                     borderColor: 'divider',
                                     display: 'inline-block',
-                                    minWidth: { xs: 260, md: 300 }
+                                    maxWidth: '100%'
                                 }}
                             >
                                 <Typography variant="h4" component="h2">{selectedPlayer.name}</Typography>
@@ -635,9 +643,52 @@ const Auction = () => {
                                     Mark as Unsold
                                 </Button>
                             </Box>
-                            <Typography variant="h6" textAlign={{ xs: 'center', md: 'left' }} mt={1.5} color={playerStatus === 'Sold' ? 'success.main' : playerStatus === 'Unsold' ? 'warning.main' : 'text.primary'}>
-                                Status: {playerStatus}
+                            <Typography variant="body1" textAlign={{ xs: 'center', md: 'left' }} mt={1.5} color="text.secondary">
+                                Available Players: {players.length}
                             </Typography>
+                            <Box mt={1} display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                                <Button
+                                    size="small"
+                                    variant="text"
+                                    color="inherit"
+                                    onClick={() => setShowTeamBudgets((prev) => !prev)}
+                                >
+                                    {showTeamBudgets ? 'Hide Team Budgets' : 'Show Team Budgets'}
+                                </Button>
+                            </Box>
+                            {showTeamBudgets && (
+                                <Box
+                                    sx={{
+                                        mt: 1,
+                                        px: 1.5,
+                                        py: 1,
+                                        border: '1px solid',
+                                        borderColor: 'divider',
+                                        borderRadius: 1.5
+                                    }}
+                                >
+                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                        Team Remaining Budgets
+                                    </Typography>
+                                    <Box display="flex" gap={1} flexWrap="wrap">
+                                        {teams.map((team) => (
+                                            <Box
+                                                key={team.id}
+                                                sx={{
+                                                    px: 1.25,
+                                                    py: 0.5,
+                                                    border: '1px solid',
+                                                    borderColor: 'divider',
+                                                    borderRadius: 1,
+                                                    fontSize: 13
+                                                }}
+                                            >
+                                                {team.name}: {team.remainingBudget?.toLocaleString()}
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                </Box>
+                            )}
                         </Grid>
                     </Grid>
                 </Card>

@@ -210,6 +210,110 @@ public class PlayerService {
     }
 
     @Transactional
+    public PlayerResponse removePlayerFromTeam(Long auctionId, Long teamId, Long playerId) {
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Auction not found with id: " + auctionId));
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + teamId));
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Player not found with id: " + playerId));
+
+        if (!player.getAuction().getId().equals(auctionId)) {
+            throw new ResourceNotFoundException("Player not found in auction with id: " + auctionId);
+        }
+        if (player.getTeam() == null || !player.getTeam().getId().equals(teamId)) {
+            throw new ResourceNotFoundException("Player not found in team with id: " + teamId);
+        }
+
+        if (player.getStatus() == PlayerStatus.SOLD) {
+            double refund = player.getCurrentPrice() != null ? player.getCurrentPrice() : 0.0;
+            double remaining = team.getRemainingBudget() != null ? team.getRemainingBudget() : 0.0;
+            double budget = team.getBudgetAmount() != null ? team.getBudgetAmount() : remaining;
+            double nextRemaining = remaining + refund;
+            if (nextRemaining > budget) {
+                nextRemaining = budget;
+            }
+            team.setRemainingBudget(nextRemaining);
+            teamRepository.save(team);
+        }
+
+        player.setIsIcon(false);
+        player.setTeam(null);
+        player.setStatus(PlayerStatus.AVAILABLE);
+        player.setCurrentPrice(auction.getBasePrice());
+
+        player = playerRepository.save(player);
+        return convertToResponse(player);
+    }
+
+    @Transactional
+    public PlayerResponse addPlayerToTeam(Long auctionId, Long teamId, Long playerId, Double finalBidAmount) {
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Auction not found with id: " + auctionId));
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + teamId));
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Player not found with id: " + playerId));
+
+        if (!team.getAuction().getId().equals(auctionId)) {
+            throw new ResourceNotFoundException("Team not found in auction with id: " + auctionId);
+        }
+        if (!player.getAuction().getId().equals(auctionId)) {
+            throw new ResourceNotFoundException("Player not found in auction with id: " + auctionId);
+        }
+        if (player.getTeam() != null) {
+            throw new IllegalArgumentException("Player is already assigned to a team.");
+        }
+        if (player.getStatus() == PlayerStatus.SOLD) {
+            throw new IllegalArgumentException("Player is already sold.");
+        }
+
+        double soldAmount = finalBidAmount != null ? finalBidAmount : auction.getBasePrice();
+        if (soldAmount < 0) {
+            throw new IllegalArgumentException("Final sold price cannot be negative.");
+        }
+
+        Double remainingBudget = team.getRemainingBudget() == null ? 0.0 : team.getRemainingBudget();
+        Double newRemainingBudget = remainingBudget - soldAmount;
+        if (newRemainingBudget < 0) {
+            throw new IllegalArgumentException("Insufficient budget for team: " + team.getName());
+        }
+
+        player.setTeam(team);
+        player.setIsIcon(false);
+        player.setStatus(PlayerStatus.SOLD);
+        player.setCurrentPrice(soldAmount);
+        team.setRemainingBudget(newRemainingBudget);
+
+        teamRepository.save(team);
+        player = playerRepository.save(player);
+        return convertToResponse(player);
+    }
+
+    @Transactional
+    public PlayerResponse setUnsoldPlayerAvailable(Long auctionId, Long playerId) {
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Auction not found with id: " + auctionId));
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Player not found with id: " + playerId));
+
+        if (!player.getAuction().getId().equals(auctionId)) {
+            throw new ResourceNotFoundException("Player not found in auction with id: " + auctionId);
+        }
+        if (player.getStatus() != PlayerStatus.UNSOLD) {
+            throw new IllegalArgumentException("Only UNSOLD players can be set to AVAILABLE.");
+        }
+
+        player.setStatus(PlayerStatus.AVAILABLE);
+        player.setCurrentPrice(auction.getBasePrice());
+        player.setTeam(null);
+        player.setIsIcon(false);
+
+        player = playerRepository.save(player);
+        return convertToResponse(player);
+    }
+
+    @Transactional
     public void deletePlayer(Long auctionId, Long playerId) {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Auction not found with id: " + auctionId));

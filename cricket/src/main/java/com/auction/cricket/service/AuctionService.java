@@ -64,10 +64,6 @@ public class AuctionService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (request.getAuctionDate().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Auction date must be in the future");
-        }
-
         Auction auction = new Auction();
         auction.setName(request.getName());
         auction.setLogoUrl(request.getLogoUrl());

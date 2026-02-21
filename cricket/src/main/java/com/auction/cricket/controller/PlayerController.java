@@ -92,4 +92,11 @@ public class PlayerController {
         playerService.setUnsoldPlayersAvailable(auctionId);
         return ResponseEntity.ok().build();
     }
+
+    @PatchMapping("/{playerId}/set-available")
+    public ResponseEntity<PlayerResponse> setUnsoldPlayerAvailable(
+            @PathVariable Long auctionId,
+            @PathVariable Long playerId) {
+        return ResponseEntity.ok(playerService.setUnsoldPlayerAvailable(auctionId, playerId));
+    }
 }

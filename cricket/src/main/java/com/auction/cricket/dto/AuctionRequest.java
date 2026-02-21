@@ -13,7 +13,6 @@ public class AuctionRequest {
     private String logoUrl;
 
     @NotNull(message = "Auction date is required")
-    @Future(message = "Auction date must be in the future")
     private LocalDateTime auctionDate;
 
     @NotNull(message = "Points per team is required")

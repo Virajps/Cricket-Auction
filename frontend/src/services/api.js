@@ -30,7 +30,8 @@ api.interceptors.response.use(
         if (error.response && error.response.status === 401 && !window.location.pathname.includes('/login')) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.href = '/login';
+            const returnTo = `${window.location.pathname}${window.location.search}`;
+            window.location.href = `/login?redirect=${encodeURIComponent(returnTo)}`;
         }
         return Promise.reject(error);
     }
@@ -173,6 +174,15 @@ export const teamService = {
     removeIconPlayer: async (auctionId, teamId, playerId) => {
         const response = await api.delete(`/auctions/${auctionId}/teams/${teamId}/icon-players/${playerId}`);
         return response.data;
+    },
+    removePlayerFromTeam: async (auctionId, teamId, playerId) => {
+        const response = await api.delete(`/auctions/${auctionId}/teams/${teamId}/players/${playerId}`);
+        return response.data;
+    },
+    addPlayerToTeam: async (auctionId, teamId, playerId, finalBidAmount = null) => {
+        const payload = finalBidAmount == null ? {} : { finalBidAmount };
+        const response = await api.post(`/auctions/${auctionId}/teams/${teamId}/players/${playerId}`, payload);
+        return response.data;
     }
 };
 export const playerService = {
@@ -216,6 +226,10 @@ export const playerService = {
         payload.finalBidAmount = finalBidAmount;
         const response = await api.patch(`/auctions/${auctionId}/players/${playerId}/status`, payload);
         console.log('playerService.updateStatus response:', response.data);
+        return response.data;
+    },
+    setAvailableFromUnsold: async (auctionId, playerId) => {
+        const response = await api.patch(`/auctions/${auctionId}/players/${playerId}/set-available`);
         return response.data;
     },
     uploadPhoto: async (file) => {

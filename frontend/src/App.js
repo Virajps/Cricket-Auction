@@ -1,7 +1,8 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Container } from '@mui/material';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Box, CircularProgress, Container } from '@mui/material';
 import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './contexts/AuthContext';
 import Navigation from './components/Navigation';
 import AuctionList from './components/AuctionList';
 import AuctionForm from './components/AuctionForm';
@@ -25,10 +26,40 @@ import Auction from './components/Auction';
 import AuctionSummary from './components/AuctionSummary';
 import './App.css';
 
-function ProtectedRoute({ children, allowed, fallback }) {
-  if (!allowed) {
-    return fallback || <div style={{padding: 40}}><h2>Not authorized</h2></div>;
+function RouteLoader() {
+  return (
+    <Box sx={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <CircularProgress />
+    </Box>
+  );
+}
+
+function RequireAuth({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return <RouteLoader />;
   }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  return children;
+}
+
+function PublicOnly({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <RouteLoader />;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/auctions" replace />;
+  }
+
   return children;
 }
 
@@ -39,87 +70,67 @@ function App() {
         <Navigation />
         <Container maxWidth="xl" disableGutters sx={{ px: 0, minHeight: '100vh', bgcolor: 'background.default' }}>
           <Routes>
-            <Route path="/" element={<AuctionList />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/" element={<Navigate to="/auctions" replace />} />
+            <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
+            <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
+            <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
             {/* Auction routes */}
-            <Route path="/auctions" element={<AuctionList />} />
-            <Route path="/auctions/create" element={<AuctionForm />} />
-            <Route path="/auctions/:id" element={<AuctionDetails />} />
+            <Route path="/auctions" element={<RequireAuth><AuctionList /></RequireAuth>} />
+            <Route path="/auctions/create" element={<RequireAuth><AuctionForm /></RequireAuth>} />
+            <Route path="/auctions/:id" element={<RequireAuth><AuctionDetails /></RequireAuth>} />
             <Route path="/auctions/:id/edit" element={
-              <ProtectedRoute
-                allowed={true} // Placeholder for actual logic, assuming ADMIN or creator check
-                fallback={<div style={{padding: 40}}><h2>Not authorized</h2></div>}
-              >
+              <RequireAuth>
                 <AuctionForm />
-              </ProtectedRoute>
+              </RequireAuth>
             } />
-            <Route path="/auctions/:id/live" element={<Auction />} />
-            <Route path="/auctions/:id/summary" element={<AuctionSummary />} />
+            <Route path="/auctions/:id/live" element={<RequireAuth><Auction /></RequireAuth>} />
+            <Route path="/auctions/:id/summary" element={<RequireAuth><AuctionSummary /></RequireAuth>} />
             {/* Team routes */}
             <Route path="/auctions/:auctionId/teams" element={
-              <ProtectedRoute
-                allowed={true} // Placeholder for actual logic, assuming ADMIN or creator check
-                fallback={<div style={{padding: 40}}><h2>Not authorized</h2></div>}
-              >
+              <RequireAuth>
                 <TeamList />
-              </ProtectedRoute>
+              </RequireAuth>
             } />
             <Route path="/auctions/:auctionId/teams/new" element={
-              <ProtectedRoute
-                allowed={true} // Placeholder for actual logic, assuming ADMIN or creator check
-                fallback={<div style={{padding: 40}}><h2>Not authorized</h2></div>}
-              >
+              <RequireAuth>
                 <TeamForm />
-              </ProtectedRoute>
+              </RequireAuth>
             } />
             <Route path="/auctions/:auctionId/teams/:id/edit" element={
-              <ProtectedRoute
-                allowed={true} // Placeholder for actual logic, assuming ADMIN or creator check
-                fallback={<div style={{padding: 40}}><h2>Not authorized</h2></div>}
-              >
+              <RequireAuth>
                 <TeamForm />
-              </ProtectedRoute>
+              </RequireAuth>
             } />
             
             {/* Player routes */}
             <Route path="/auctions/:auctionId/players" element={
-              <ProtectedRoute
-                allowed={true} // Placeholder for actual logic, assuming ADMIN or creator check
-                fallback={<div style={{padding: 40}}><h2>Not authorized</h2></div>}
-              >
+              <RequireAuth>
                 <PlayerList />
-              </ProtectedRoute>
+              </RequireAuth>
             } />
             <Route path="/auctions/:auctionId/players/new" element={
-              <ProtectedRoute
-                allowed={true} // Placeholder for actual logic, assuming ADMIN or creator check
-                fallback={<div style={{padding: 40}}><h2>Not authorized</h2></div>}
-              >
+              <RequireAuth>
                 <PlayerForm />
-              </ProtectedRoute>
+              </RequireAuth>
             } />
             <Route path="/auctions/:auctionId/players/:id/edit" element={
-              <ProtectedRoute
-                allowed={true} // Placeholder for actual logic, assuming ADMIN or creator check
-                fallback={<div style={{padding: 40}}><h2>Not authorized</h2></div>}
-              >
+              <RequireAuth>
                 <PlayerForm />
-              </ProtectedRoute>
+              </RequireAuth>
             } />
             
             {/* Category routes */}
-            <Route path="/auctions/:auctionId/categories" element={<CategoryList />} />
-            <Route path="/auctions/:auctionId/categories/new" element={<CategoryForm />} />
-            <Route path="/auctions/:auctionId/categories/:id/edit" element={<CategoryForm />} />
+            <Route path="/auctions/:auctionId/categories" element={<RequireAuth><CategoryList /></RequireAuth>} />
+            <Route path="/auctions/:auctionId/categories/new" element={<RequireAuth><CategoryForm /></RequireAuth>} />
+            <Route path="/auctions/:auctionId/categories/:id/edit" element={<RequireAuth><CategoryForm /></RequireAuth>} />
             
             {/* Settings routes */}
-            <Route path="/auctions/:auctionId/settings" element={<AuctionSettings />} />
+            <Route path="/auctions/:auctionId/settings" element={<RequireAuth><AuctionSettings /></RequireAuth>} />
             {/* Bid rules routes */}
-            <Route path="/auctions/:auctionId/bid-rules" element={<BidRuleList />} />
-            <Route path="/auctions/:auctionId/bid-rules/new" element={<BidRuleForm />} />
-            <Route path="/auctions/:auctionId/bid-rules/:id/edit" element={<BidRuleForm />} />
+            <Route path="/auctions/:auctionId/bid-rules" element={<RequireAuth><BidRuleList /></RequireAuth>} />
+            <Route path="/auctions/:auctionId/bid-rules/new" element={<RequireAuth><BidRuleForm /></RequireAuth>} />
+            <Route path="/auctions/:auctionId/bid-rules/:id/edit" element={<RequireAuth><BidRuleForm /></RequireAuth>} />
+            <Route path="*" element={<Navigate to="/auctions" replace />} />
           </Routes>
         </Container>
       </Router>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AppBar, Toolbar, Typography, Button, IconButton, Box, Drawer, List, ListItem, ListItemText, useTheme, useMediaQuery } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 
@@ -11,10 +11,12 @@ const navLinks = [
 
 const Navigation = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
   const handleLogout = () => {
     logout();
@@ -33,7 +35,7 @@ const Navigation = () => {
 
   const renderNavLinks = () => (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-      {navLinks.map((link, i) => (
+      {navLinks.map((link) => (
         <motion.div key={link.label} variants={navItemVariants}>
           <Button
             color="inherit"
@@ -83,7 +85,7 @@ const Navigation = () => {
               PaperProps={{ sx: { width: 250 } }}
             >
               <List>
-                {navLinks.map((link) => (
+                {user && navLinks.map((link) => (
                   <ListItem
                     button
                     key={link.label}
@@ -115,9 +117,12 @@ const Navigation = () => {
         ) : (
           <motion.div initial="hidden" animate="visible" variants={navItemVariants}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              {renderNavLinks()}
+              {user && renderNavLinks()}
               {user ? (
                 <>
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    {user.username}
+                  </Typography>
                   <Button
                     color="inherit"
                     component={Link}
@@ -135,20 +140,24 @@ const Navigation = () => {
                 </>
               ) : (
                 <>
-                  <Button
-                    color="primary"
-                    variant="contained"
-                    onClick={() => navigate('/login')}
-                  >
-                    Login
-                  </Button>
-                  <Button
-                    color="secondary"
-                    variant="contained"
-                    onClick={() => navigate('/register')}
-                  >
-                    Register
-                  </Button>
+                  {!isAuthPage && (
+                    <>
+                      <Button
+                        color="primary"
+                        variant="contained"
+                        onClick={() => navigate('/login')}
+                      >
+                        Login
+                      </Button>
+                      <Button
+                        color="secondary"
+                        variant="contained"
+                        onClick={() => navigate('/register')}
+                      >
+                        Register
+                      </Button>
+                    </>
+                  )}
                 </>
               )}
             </Box>

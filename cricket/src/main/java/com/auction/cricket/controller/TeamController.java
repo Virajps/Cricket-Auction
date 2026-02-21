@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.auction.cricket.dto.DirectTeamPlayerRequest;
 import com.auction.cricket.dto.TeamRequest;
 import com.auction.cricket.dto.TeamResponse;
 import com.auction.cricket.dto.PlayerResponse;
@@ -95,5 +96,25 @@ public class TeamController {
         logger.debug("Received request to remove icon player {} from team {} for auction {}", playerId, teamId,
                 auctionId);
         return ResponseEntity.ok(playerService.removeIconPlayer(auctionId, teamId, playerId));
+    }
+
+    @DeleteMapping("/{teamId}/players/{playerId}")
+    public ResponseEntity<PlayerResponse> removePlayerFromTeam(
+            @PathVariable Long auctionId,
+            @PathVariable Long teamId,
+            @PathVariable Long playerId) {
+        logger.debug("Received request to remove player {} from team {} for auction {}", playerId, teamId, auctionId);
+        return ResponseEntity.ok(playerService.removePlayerFromTeam(auctionId, teamId, playerId));
+    }
+
+    @PostMapping("/{teamId}/players/{playerId}")
+    public ResponseEntity<PlayerResponse> addPlayerToTeam(
+            @PathVariable Long auctionId,
+            @PathVariable Long teamId,
+            @PathVariable Long playerId,
+            @RequestBody(required = false) DirectTeamPlayerRequest request) {
+        Double finalBidAmount = request != null ? request.getFinalBidAmount() : null;
+        logger.debug("Received request to directly add player {} to team {} for auction {}", playerId, teamId, auctionId);
+        return ResponseEntity.ok(playerService.addPlayerToTeam(auctionId, teamId, playerId, finalBidAmount));
     }
 }

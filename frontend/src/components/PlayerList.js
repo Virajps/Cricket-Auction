@@ -28,12 +28,12 @@ import {
     Tab,
     Tabs,
 } from '@mui/material';
-import { Delete as DeleteIcon, Search as SearchIcon, Loop as LoopIcon, CloudUpload as CloudUploadIcon } from '@mui/icons-material';
+import { Delete as DeleteIcon, Search as SearchIcon, Loop as LoopIcon, CloudUpload as CloudUploadIcon, WorkspacePremium as WorkspacePremiumIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { playerService, auctionService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import ErrorMessage, { MessageType } from './common/ErrorMessage';
+import { MessageType } from './common/ErrorMessage';
 import PlayerDetailsCard from './PlayerDetailsCard';
 import PlayerImport from './PlayerImport';
 
@@ -59,6 +59,7 @@ const PlayerList = () => {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [playerToDelete, setPlayerToDelete] = useState(null);
     const [statusFilter, setStatusFilter] = useState('ALL');
+    const [iconFilter, setIconFilter] = useState('ALL');
     const [searchQuery, setSearchQuery] = useState('');
     const [showSearchBar, setShowSearchBar] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -75,8 +76,11 @@ const PlayerList = () => {
 
     const filteredPlayers = players.filter(player => {
         const statusMatch = statusFilter === 'ALL' || player.status === statusFilter;
+        const iconMatch = iconFilter === 'ALL'
+            || (iconFilter === 'ICON' && player.isIcon)
+            || (iconFilter === 'NON_ICON' && !player.isIcon);
         const nameMatch = normalizeText(player.name).includes(normalizeText(searchQuery));
-        return statusMatch && nameMatch;
+        return statusMatch && iconMatch && nameMatch;
     });
 
     const indexOfLastPlayer = currentPage * playersPerPage;
@@ -89,7 +93,7 @@ const PlayerList = () => {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, statusFilter]);
+    }, [searchQuery, statusFilter, iconFilter]);
 
     useEffect(() => {
         const totalPages = Math.max(1, Math.ceil(filteredPlayers.length / playersPerPage));
@@ -134,7 +138,8 @@ const PlayerList = () => {
         fetchPlayers();
     }, [auctionId, fetchAuction, fetchPlayers]);
 
-    const handleDeleteClick = (player) => {
+    const handleDeleteClick = (event, player) => {
+        event.stopPropagation();
         setPlayerToDelete(player);
         setDeleteDialogOpen(true);
     };
@@ -170,6 +175,21 @@ const PlayerList = () => {
                 type: MessageType.ERROR,
                 title: 'Failed to Set Unsold Players Available',
                 message: 'Unable to set unsold players available. Please try again later.'
+            });
+        }
+    };
+
+    const handleSetSingleUnsoldAvailable = async (event, playerId) => {
+        event.stopPropagation();
+        try {
+            await playerService.setAvailableFromUnsold(auctionId, playerId);
+            await fetchPlayers();
+        } catch (error) {
+            console.error('Error setting single unsold player available:', error);
+            setError({
+                type: MessageType.ERROR,
+                title: 'Failed to Set Player Available',
+                message: error?.response?.data?.message || 'Unable to set player available. Please try again later.'
             });
         }
     };
@@ -235,6 +255,20 @@ const PlayerList = () => {
                                 <MenuItem value="AVAILABLE">Available</MenuItem>
                                 <MenuItem value="SOLD">Sold</MenuItem>
                                 <MenuItem value="UNSOLD">Unsold</MenuItem>
+                            </Select>
+                        </FormControl>
+                        <FormControl sx={{ minWidth: 160 }}>
+                            <InputLabel id="icon-filter-label">Icon Players</InputLabel>
+                            <Select
+                                labelId="icon-filter-label"
+                                id="icon-filter"
+                                value={iconFilter}
+                                label="Icon Players"
+                                onChange={(e) => setIconFilter(e.target.value)}
+                            >
+                                <MenuItem value="ALL">All Players</MenuItem>
+                                <MenuItem value="ICON">Only Icon Players</MenuItem>
+                                <MenuItem value="NON_ICON">Non-Icon Players</MenuItem>
                             </Select>
                         </FormControl>
                         {(user?.role === 'ADMIN' || user?.username === auction?.createdBy) && (
@@ -309,18 +343,52 @@ const PlayerList = () => {
                                             variants={cardVariants}
                                             custom={i}
                                         >
-                                            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', cursor: 'pointer' }} onClick={() => handlePlayerCardClick(player)}>
+                                            <Card
+                                                sx={{
+                                                    height: '100%',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    cursor: 'pointer',
+                                                    border: player.isIcon ? '1px solid' : 'none',
+                                                    borderColor: player.isIcon ? 'warning.main' : 'transparent',
+                                                    boxShadow: player.isIcon ? '0 0 0 2px rgba(237, 108, 2, 0.12)' : undefined,
+                                                    background: player.isIcon
+                                                        ? 'linear-gradient(135deg, rgba(255,244,229,0.95) 0%, rgba(255,255,255,1) 45%)'
+                                                        : undefined
+                                                }}
+                                                onClick={() => handlePlayerCardClick(player)}
+                                            >
                                                 <CardContent sx={{ flexGrow: 1 }}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                                        <Avatar src={player.photoUrl || 'https://via.placeholder.com/50'} sx={{ width: 50, height: 50, mr: 2 }} />
-                                                        <Typography variant="h5" component="h2" gutterBottom>
-                                                            {player.name}
-                                                        </Typography>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'space-between' }}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                                                            <Avatar
+                                                                src={player.photoUrl || 'https://via.placeholder.com/50'}
+                                                                sx={{
+                                                                    width: 50,
+                                                                    height: 50,
+                                                                    mr: 2,
+                                                                    border: player.isIcon ? '2px solid' : 'none',
+                                                                    borderColor: player.isIcon ? 'warning.main' : 'transparent'
+                                                                }}
+                                                            />
+                                                            <Typography variant="h5" component="h2" gutterBottom noWrap>
+                                                                {player.name}
+                                                            </Typography>
+                                                        </Box>
+                                                        {player.isIcon && (
+                                                            <Chip
+                                                                icon={<WorkspacePremiumIcon />}
+                                                                label="Icon"
+                                                                size="small"
+                                                                color="warning"
+                                                                variant="outlined"
+                                                            />
+                                                        )}
                                                     </Box>
                                                     <Box sx={{ mb: 1 }}>
                                                         <Chip
                                                             label={player.role}
-                                                            color="primary"
+                                                            color={player.isIcon ? 'warning' : 'primary'}
                                                             size="small"
                                                             sx={{ mr: 1 }}
                                                         />
@@ -342,19 +410,35 @@ const PlayerList = () => {
                                                     )}
                                                 </CardContent>
                                                 {(user?.role === 'ADMIN' || user?.username === auction?.createdBy) && (
-                                                    <CardActions sx={{ p: 2, justifyContent: 'flex-end' }}>
+                                                    <CardActions
+                                                        sx={{ p: 2, justifyContent: 'flex-end' }}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
                                                         <Button
                                                             size="small"
                                                             variant="outlined"
-                                                            onClick={() => navigate(`/auctions/${auctionId}/players/${player.id}/edit`)}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                navigate(`/auctions/${auctionId}/players/${player.id}/edit`);
+                                                            }}
                                                         >
                                                             Edit
                                                         </Button>
+                                                        {player.status === 'UNSOLD' && (
+                                                            <Button
+                                                                size="small"
+                                                                color="warning"
+                                                                variant="outlined"
+                                                                onClick={(e) => handleSetSingleUnsoldAvailable(e, player.id)}
+                                                            >
+                                                                Make Available
+                                                            </Button>
+                                                        )}
                                                         <Tooltip title="Delete Player">
                                                             <IconButton
                                                                 size="small"
                                                                 color="error"
-                                                                onClick={() => handleDeleteClick(player)}
+                                                                onClick={(e) => handleDeleteClick(e, player)}
                                                             >
                                                                 <DeleteIcon />
                                                             </IconButton>

@@ -6,9 +6,12 @@ import {
     TextField,
     Button,
     Alert,
-    Paper
+    Paper,
+    InputAdornment,
+    IconButton
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 
@@ -23,9 +26,15 @@ const Login = () => {
         password: ''
     });
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const location = useLocation();
     const navigate = useNavigate();
     const { login } = useAuth();
+
+    const redirectQuery = new URLSearchParams(location.search).get('redirect');
+    const redirectFromState = location.state?.from?.pathname;
+    const redirectTo = redirectQuery || redirectFromState || '/auctions';
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -41,9 +50,11 @@ const Login = () => {
         setLoading(true);
 
         try {
-            console.log('Submitting login with credentials:', formData); // Debug log
-            await login(formData);
-            navigate('/auctions');
+            await login({
+                username: formData.username.trim(),
+                password: formData.password
+            });
+            navigate(redirectTo, { replace: true });
         } catch (err) {
             console.error('Login error:', err);
             setError(err.response?.data?.message || err.message || 'Invalid username or password');
@@ -67,6 +78,11 @@ const Login = () => {
                         <Typography component="h1" variant="h4" align="center" gutterBottom>
                             Login
                         </Typography>
+                        {redirectTo !== '/auctions' && (
+                            <Alert severity="info" sx={{ mb: 2 }}>
+                                Please login to continue.
+                            </Alert>
+                        )}
 
                         {error && (
                             <Alert severity="error" sx={{ mb: 2 }}>
@@ -106,11 +122,25 @@ const Login = () => {
                                 fullWidth
                                 name="password"
                                 label="Password"
-                                type="password"
+                                type={showPassword ? 'text' : 'password'}
                                 id="password"
                                 autoComplete="current-password"
                                 value={formData.password}
                                 onChange={handleChange}
+                                inputProps={{ minLength: 6 }}
+                                InputProps={{
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton
+                                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                                onClick={() => setShowPassword((prev) => !prev)}
+                                                edge="end"
+                                            >
+                                                {showPassword ? <VisibilityOff /> : <Visibility />}
+                                            </IconButton>
+                                        </InputAdornment>
+                                    )
+                                }}
                                 sx={{
                                     '& .MuiOutlinedInput-root': {
                                         '& fieldset': {
@@ -130,7 +160,7 @@ const Login = () => {
                                 fullWidth
                                 variant="contained"
                                 color="primary"
-                                disabled={loading}
+                                disabled={loading || !formData.username.trim() || !formData.password}
                                 sx={{ mt: 3, mb: 2 }}
                             >
                                 {loading ? 'Logging in...' : 'Login'}
@@ -138,7 +168,7 @@ const Login = () => {
                             <Button
                                 fullWidth
                                 variant="text"
-                                onClick={() => navigate('/register')}
+                                onClick={() => navigate(`/register${redirectQuery ? `?redirect=${encodeURIComponent(redirectQuery)}` : ''}`, { state: { from: location.state?.from } })}
                                 sx={{ color: 'primary.main', fontWeight: 600 }}
                             >
                                 Don't have an account? Register
