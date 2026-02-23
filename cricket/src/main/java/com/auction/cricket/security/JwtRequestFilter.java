@@ -35,7 +35,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         logger.debug("Processing request URI: {} with method: {}", request.getRequestURI(), request.getMethod());
         
         final String authorizationHeader = request.getHeader("Authorization");
-        logger.debug("Authorization header: {}", authorizationHeader);
+        logger.debug("Authorization header present: {}", authorizationHeader != null);
 
         String username = null;
         String jwt = null;

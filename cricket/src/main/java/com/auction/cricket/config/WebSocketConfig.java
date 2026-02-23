@@ -17,7 +17,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final String allowedOrigins;
 
-    public WebSocketConfig(@Value("${app.cors.allowed-origins:http://localhost:3000}") String allowedOrigins) {
+    public WebSocketConfig(@Value("${app.cors.allowed-origins}") String allowedOrigins) {
         this.allowedOrigins = allowedOrigins;
     }
 
