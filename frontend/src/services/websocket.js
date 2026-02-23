@@ -1,7 +1,7 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-const WS_URL = 'http://localhost:8080/ws';
+const WS_URL = (process.env.REACT_APP_WS_URL || 'https://pale-lucinda-squadify-d90cdf3a.koyeb.app/ws').replace(/\/$/, '');
 
 class WebSocketService {
     constructor() {

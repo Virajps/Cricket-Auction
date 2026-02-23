@@ -1,6 +1,40 @@
 import axios from 'axios';
 
-const API_URL = (process.env.REACT_APP_API_URL || 'http://localhost:8080/api').replace(/\/$/, '');
+const API_URL = (process.env.REACT_APP_API_URL || 'https://pale-lucinda-squadify-d90cdf3a.koyeb.app/api').replace(/\/$/, '');
+const API_ORIGIN = API_URL.replace(/\/api$/, '');
+
+const toBackendAbsoluteUrl = (value) => {
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    if (!trimmed) return value;
+    if (/^(https?:|data:|blob:)/i.test(trimmed)) return trimmed;
+    if (trimmed.startsWith('//')) return `${window.location.protocol}${trimmed}`;
+    if (trimmed.startsWith('/')) return `${API_ORIGIN}${trimmed}`;
+    return `${API_ORIGIN}/${trimmed}`;
+};
+
+const normalizeBackendUrlFields = (payload, seen = new WeakSet()) => {
+    if (!payload || typeof payload !== 'object') return payload;
+    if (seen.has(payload)) return payload;
+    seen.add(payload);
+
+    if (Array.isArray(payload)) {
+        payload.forEach((item) => normalizeBackendUrlFields(item, seen));
+        return payload;
+    }
+
+    Object.entries(payload).forEach(([key, value]) => {
+        if (typeof value === 'string' && /url$/i.test(key)) {
+            payload[key] = toBackendAbsoluteUrl(value);
+            return;
+        }
+        if (value && typeof value === 'object') {
+            normalizeBackendUrlFields(value, seen);
+        }
+    });
+
+    return payload;
+};
 
 export const getApiErrorMessage = (error, fallback = 'Something went wrong. Please try again.') => {
     if (!error) return fallback;
@@ -60,7 +94,10 @@ api.interceptors.request.use(
 
 // Response interceptor
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        normalizeBackendUrlFields(response.data);
+        return response;
+    },
     (error) => {
         if (error.response && error.response.status === 401 && !window.location.pathname.includes('/login')) {
             localStorage.removeItem('token');
