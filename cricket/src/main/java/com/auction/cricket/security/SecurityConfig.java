@@ -28,7 +28,7 @@ public class SecurityConfig {
     private final String allowedOrigins;
 
     public SecurityConfig(JwtRequestFilter jwtRequestFilter,
-            @Value("${app.cors.allowed-origins:http://localhost:3000}") String allowedOrigins) {
+            @Value("${app.cors.allowed-origins}") String allowedOrigins) {
         this.jwtRequestFilter = jwtRequestFilter;
         this.allowedOrigins = allowedOrigins;
     }
@@ -43,6 +43,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/images/**").permitAll()
                 .requestMatchers("/api/proxy/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
+                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/ws/**").permitAll()
                 .requestMatchers("/api/auctions/**").authenticated()
                 .requestMatchers("/api/teams/**").authenticated()

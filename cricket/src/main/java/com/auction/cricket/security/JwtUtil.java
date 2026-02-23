@@ -4,12 +4,14 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
@@ -23,11 +25,21 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String secret;
 
-    @Value("${jwt.expiration}")
-    private Long expiration;
+    @Value("${jwt.expiration-ms}")
+    private Long expirationMs;
+
+    @PostConstruct
+    public void validateConfiguration() {
+        if (secret == null || secret.trim().length() < 32) {
+            throw new IllegalStateException("JWT secret must be at least 32 characters long.");
+        }
+        if (expirationMs == null || expirationMs <= 0) {
+            throw new IllegalStateException("JWT expiration must be a positive number of milliseconds.");
+        }
+    }
 
     private Key getSigningKey() {
-        byte[] keyBytes = secret.getBytes();
+        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
@@ -109,7 +121,7 @@ public class JwtUtil {
 
     private String createToken(Map<String, Object> claims, String subject) {
         Date now = new Date();
-        Date expirationDate = new Date(now.getTime() + expiration * 1000);
+        Date expirationDate = new Date(now.getTime() + expirationMs);
         
         String token = Jwts.builder()
             .setClaims(claims)
