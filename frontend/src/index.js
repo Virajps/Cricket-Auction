@@ -4,6 +4,7 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import theme from './theme';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -12,6 +13,7 @@ root.render(
         <ThemeProvider theme={theme}>
             <CssBaseline />
             <App />
+            <SpeedInsights />
         </ThemeProvider>
     </React.StrictMode>
 );
