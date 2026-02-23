@@ -5,7 +5,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 
-const navLinks = [
+const baseNavLinks = [
   { label: 'Auctions', path: '/auctions' },
 ];
 
@@ -17,6 +17,9 @@ const Navigation = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const navLinks = user?.role === 'ADMIN' || user?.roles?.includes?.('ADMIN')
+    ? [...baseNavLinks, { label: 'Admin Access', path: '/admin/access' }]
+    : baseNavLinks;
 
   const handleLogout = () => {
     logout();
@@ -169,4 +172,3 @@ const Navigation = () => {
 };
 
 export default Navigation;
- 

@@ -39,11 +39,13 @@ public class AuctionService {
     private final SponsorRepository sponsorRepository;
     private final TeamRepository teamRepository;
     private final EntityManager entityManager;
+    private final AccessEntitlementService accessEntitlementService;
 
     public AuctionService(AuctionRepository auctionRepository, UserRepository userRepository, TeamService teamService,
             PlayerService playerService, CategoryService categoryService, CategoryRepository categoryRepository,
             PlayerRepository playerRepository, BidRepository bidRepository, BidRuleRepository bidRuleRepository,
-            SponsorRepository sponsorRepository, TeamRepository teamRepository, EntityManager entityManager) {
+            SponsorRepository sponsorRepository, TeamRepository teamRepository, EntityManager entityManager,
+            AccessEntitlementService accessEntitlementService) {
         this.auctionRepository = auctionRepository;
         this.userRepository = userRepository;
         this.teamService = teamService;
@@ -56,6 +58,7 @@ public class AuctionService {
         this.sponsorRepository = sponsorRepository;
         this.teamRepository = teamRepository;
         this.entityManager = entityManager;
+        this.accessEntitlementService = accessEntitlementService;
     }
 
     @Transactional
@@ -82,7 +85,7 @@ public class AuctionService {
         try {
             auction = auctionRepository.save(auction);
 
-            return convertToResponse(auction);
+            return convertToResponse(auction, username);
         } catch (Exception e) {
             System.err.println("Error creating auction: " + e.getMessage());
             e.printStackTrace();
@@ -95,14 +98,14 @@ public class AuctionService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return auctionRepository.findByCreatedBy(user).stream()
-                .map(this::convertToResponse)
+                .map(auction -> convertToResponse(auction, username))
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public List<AuctionResponse> getUpcomingAuctions() {
         return auctionRepository.findUpcomingAuctions(LocalDateTime.now()).stream()
-                .map(this::convertToResponse)
+                .map(auction -> convertToResponse(auction, null))
                 .collect(Collectors.toList());
     }
 
@@ -111,14 +114,14 @@ public class AuctionService {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime twoDaysAgo = now.minusDays(2);
         return auctionRepository.findRecentAuctions(now, twoDaysAgo).stream()
-                .map(this::convertToResponse)
+                .map(auction -> convertToResponse(auction, null))
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public List<AuctionResponse> getPastAuctions() {
         return auctionRepository.findPastAuctions(LocalDateTime.now()).stream()
-                .map(this::convertToResponse)
+                .map(auction -> convertToResponse(auction, null))
                 .collect(Collectors.toList());
     }
 
@@ -131,7 +134,7 @@ public class AuctionService {
         if (!auction.getCreatedBy().equals(user)) {
             throw new ResourceNotFoundException("Auction not found with id: " + id);
         }
-        return convertToResponse(auction);
+        return convertToResponse(auction, username);
     }
 
     @Transactional
@@ -160,7 +163,7 @@ public class AuctionService {
         auction.setPlayersPerTeam(request.getPlayersPerTeam());
 
         auction = auctionRepository.save(auction);
-        return convertToResponse(auction);
+        return convertToResponse(auction, username);
     }
 
     @Transactional
@@ -216,7 +219,7 @@ public class AuctionService {
 
         auction.setPlayerRegistrationEnabled(!auction.getPlayerRegistrationEnabled());
         auction = auctionRepository.save(auction);
-        return convertToResponse(auction);
+        return convertToResponse(auction, username);
     }
 
     @Transactional
@@ -232,10 +235,10 @@ public class AuctionService {
 
         auction.setIsActive(!auction.getIsActive());
         auction = auctionRepository.save(auction);
-        return convertToResponse(auction);
+        return convertToResponse(auction, username);
     }
 
-    private AuctionResponse convertToResponse(Auction auction) {
+    private AuctionResponse convertToResponse(Auction auction, String username) {
         AuctionResponse response = new AuctionResponse();
         response.setId(auction.getId());
         response.setName(auction.getName());
@@ -252,14 +255,19 @@ public class AuctionService {
         response.setOverlayUrl(auction.getOverlayUrl());
         response.setSummaryUrl(auction.getSummaryUrl());
         response.setCreatedBy(auction.getCreatedBy().getUsername());
-        response.setBidRules(
-                auction.getBidRules().stream().map(rule -> {
-                    com.auction.cricket.dto.BidRuleResponse br = new com.auction.cricket.dto.BidRuleResponse();
-                    br.setId(rule.getId());
-                    br.setThresholdAmount(rule.getThresholdAmount());
-                    br.setIncrementAmount(rule.getIncrementAmount());
-                    return br;
-                }).collect(Collectors.toList()));
+        boolean canUsePremium = username != null && accessEntitlementService.hasPremiumAccess(username, auction.getId());
+        if (canUsePremium) {
+            response.setBidRules(
+                    auction.getBidRules().stream().map(rule -> {
+                        com.auction.cricket.dto.BidRuleResponse br = new com.auction.cricket.dto.BidRuleResponse();
+                        br.setId(rule.getId());
+                        br.setThresholdAmount(rule.getThresholdAmount());
+                        br.setIncrementAmount(rule.getIncrementAmount());
+                        return br;
+                    }).collect(Collectors.toList()));
+        } else {
+            response.setBidRules(java.util.Collections.emptyList());
+        }
         // Add teams and players
         response.setTeams(teamService.getTeamsByAuction(auction.getId()));
         response.setPlayers(playerService.getAllPlayers(auction.getId()));

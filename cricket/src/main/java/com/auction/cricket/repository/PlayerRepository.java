@@ -22,6 +22,7 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     List<Player> findByAuctionAndTeam(Auction auction, Team team);
     List<Player> findByStatus(com.auction.cricket.entity.PlayerStatus status);
     List<Player> findByAuctionAndStatus(Auction auction, com.auction.cricket.entity.PlayerStatus status);
+    long countByAuction(Auction auction);
 
     long countByAuctionAndTeam(Auction auction, Team team);
 

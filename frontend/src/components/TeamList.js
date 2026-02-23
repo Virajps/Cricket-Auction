@@ -27,7 +27,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { teamService, auctionService, playerService } from '../services/api';
+import { teamService, auctionService, playerService, accessService } from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import TeamDetailsCard from './TeamDetailsCard';
 
@@ -51,6 +51,7 @@ const TeamList = () => {
     const [teamDetailsDialogOpen, setTeamDetailsDialogOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState(null);
     const [selectedTeamPlayers, setSelectedTeamPlayers] = useState([]);
+    const [hasPremiumAccess, setHasPremiumAccess] = useState(false);
 
         const fetchData = useCallback(async () => {
         try {
@@ -74,6 +75,20 @@ const TeamList = () => {
     useEffect(() => {
         fetchData();
     }, [auctionId, fetchData]);
+
+    useEffect(() => {
+        let mounted = true;
+        const fetchAccess = async () => {
+            try {
+                const status = await accessService.getStatus(auctionId);
+                if (mounted) setHasPremiumAccess(!!status?.auctionAccessActive || !!status?.admin);
+            } catch {
+                if (mounted) setHasPremiumAccess(false);
+            }
+        };
+        fetchAccess();
+        return () => { mounted = false; };
+    }, [auctionId]);
 
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this team?')) {
@@ -136,6 +151,9 @@ const TeamList = () => {
                 <Paper elevation={0} sx={{ p: 3, mb: 4, bgcolor: 'background.paper', borderRadius: 2 }}>
                     <Typography variant="h4" component="h1" gutterBottom>
                         {auction.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        Auction ID: {auction.id}
                     </Typography>
                     <Grid container spacing={3}>
                         <Grid item xs={12} sm={4}>
@@ -296,6 +314,7 @@ const TeamList = () => {
                 players={selectedTeamPlayers}
                 auctionId={auctionId}
                 auction={auction}
+                hasPremiumAccess={hasPremiumAccess}
                 onPlayersUpdated={setSelectedTeamPlayers}
                 onTeamUpdated={refreshTeams}
             />

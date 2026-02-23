@@ -5,6 +5,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,9 +46,10 @@ public class TeamController {
     @PostMapping
     public ResponseEntity<TeamResponse> createTeamForAuction(
             @PathVariable Long auctionId,
-            @RequestBody TeamRequest request) {
+            @RequestBody TeamRequest request,
+            Authentication authentication) {
         logger.debug("Received request to create team for auction: {}", auctionId);
-        return ResponseEntity.ok(teamService.createTeam(auctionId, request));
+        return ResponseEntity.ok(teamService.createTeam(auctionId, request, authentication.getName()));
     }
 
     // The following endpoints operate on team id only

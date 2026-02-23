@@ -16,11 +16,12 @@ import {
     ToggleButtonGroup
 } from '@mui/material';
 import { motion } from 'framer-motion';
-import { teamService, playerService, auctionService } from '../services/api';
+import { teamService, playerService, auctionService, accessService } from '../services/api';
 import { webSocketService } from '../services/websocket';
 import { useAuth } from '../contexts/AuthContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import Autocomplete from '@mui/material/Autocomplete';
+import PremiumUpsellDialog from './PremiumUpsellDialog';
 
 
 const pickRandomPlayer = (list) => {
@@ -58,6 +59,8 @@ const Auction = () => {
     const [directEntryTeamId, setDirectEntryTeamId] = useState('');
     const [directEntryFinalPrice, setDirectEntryFinalPrice] = useState('');
     const [showTeamBudgets, setShowTeamBudgets] = useState(false);
+    const [hasPremiumAccess, setHasPremiumAccess] = useState(false);
+    const [upsellOpen, setUpsellOpen] = useState(false);
 
     
     const lastBid = Array.isArray(bids) && bids.find(bid => bid.playerId === selectedPlayer?.id);
@@ -307,6 +310,22 @@ const Auction = () => {
         };
     }, [auctionId, selectedPlayer]);
 
+    useEffect(() => {
+        let mounted = true;
+        const fetchAccess = async () => {
+            try {
+                const status = await accessService.getStatus(auctionId);
+                if (mounted) {
+                    setHasPremiumAccess(!!status?.auctionAccessActive || !!status?.admin);
+                }
+            } catch {
+                if (mounted) setHasPremiumAccess(false);
+            }
+        };
+        fetchAccess();
+        return () => { mounted = false; };
+    }, [auctionId]);
+
     const handleRandomPlayer = () => {
         if (players.length > 0) {
             const randomIndex = Math.floor(Math.random() * players.length);
@@ -359,14 +378,18 @@ const Auction = () => {
 
     return (
         <Container maxWidth="xl" sx={{ py: 2 }}>
-                        <Box display="flex" alignItems="center" justifyContent="center" mb={0}>
+            <Box display="flex" alignItems="center" justifyContent="center" mb={0}>
                 {auction?.logoUrl && (
                     <Avatar src={auction.logoUrl} alt={auction.name} sx={{ width: 60, height: 60, mr: 2 }} />
                 )}
                 <Typography variant="h5" component="h1">
                     {auction?.name}
                 </Typography>
-                
+                {auction?.id && (
+                    <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+                        ID: {auction.id}
+                    </Typography>
+                )}
             </Box>
 
             {/* Player Search and Actions */}
@@ -411,6 +434,14 @@ const Auction = () => {
             </Box>
             {biddingMode === 'LIVE' && showJumpBid && (
                 <Box display="flex" justifyContent="center" gap={2} mb={2} flexWrap="wrap">
+                    {!hasPremiumAccess && (
+                        <Box sx={{ width: '100%' }}>
+                            <Alert severity="info" sx={{ mb: 1 }}>
+                                Jump Bid is available only on paid access.
+                            </Alert>
+                            <Button variant="contained" onClick={() => setUpsellOpen(true)}>View Pricing</Button>
+                        </Box>
+                    )}
                     <TextField
                         label="Jump Bid Amount"
                         type="number"
@@ -419,6 +450,7 @@ const Auction = () => {
                         onChange={(e) => setJumpBidAmount(e.target.value)}
                         inputProps={{ min: 0 }}
                         sx={{ minWidth: 200 }}
+                        disabled={!hasPremiumAccess}
                     />
                     <TextField
                         label="Jump Bid Team"
@@ -428,6 +460,7 @@ const Auction = () => {
                         onChange={(e) => setJumpBidTeamId(e.target.value)}
                         SelectProps={{ native: true }}
                         sx={{ minWidth: 220 }}
+                        disabled={!hasPremiumAccess}
                     >
                         <option value="" />
                         {teams.map(team => (
@@ -438,6 +471,7 @@ const Auction = () => {
                         variant="outlined"
                         onClick={() => handleJumpBid(jumpBidTeamId)}
                         disabled={
+                            !hasPremiumAccess ||
                             !jumpBidTeamId ||
                             !jumpBidAmount ||
                             !selectedPlayer ||
@@ -735,6 +769,11 @@ const Auction = () => {
                     <img src={selectedPlayer?.photoUrl} alt={selectedPlayer?.name} style={{ maxWidth: '90vw', maxHeight: '90vh' }} />
                 </Box>
             </Modal>
+            <PremiumUpsellDialog
+                open={upsellOpen}
+                onClose={() => setUpsellOpen(false)}
+                featureName="Jump Bid"
+            />
         </Container>
     );
 };

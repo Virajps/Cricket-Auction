@@ -28,14 +28,17 @@ public class TeamService {
     private final AuctionRepository auctionRepository;
     private final PlayerRepository playerRepository;
     private final BidRepository bidRepository;
+    private final AccessEntitlementService accessEntitlementService;
 
     public TeamService(TeamRepository teamRepository, UserRepository userRepository,
-            AuctionRepository auctionRepository, PlayerRepository playerRepository, BidRepository bidRepository) {
+            AuctionRepository auctionRepository, PlayerRepository playerRepository, BidRepository bidRepository,
+            AccessEntitlementService accessEntitlementService) {
         this.teamRepository = teamRepository;
         this.userRepository = userRepository;
         this.auctionRepository = auctionRepository;
         this.playerRepository = playerRepository;
         this.bidRepository = bidRepository;
+        this.accessEntitlementService = accessEntitlementService;
     }
 
     @Transactional(readOnly = true)
@@ -65,7 +68,7 @@ public class TeamService {
     }
 
     @Transactional
-    public TeamResponse createTeam(Long auctionId, TeamRequest request) {
+    public TeamResponse createTeam(Long auctionId, TeamRequest request, String username) {
         logger.debug("Creating team for auction: {}, request: {}", auctionId, request);
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Auction not found with id: " + auctionId));
@@ -75,6 +78,7 @@ public class TeamService {
         if (currentTeamCount >= auction.getTotalTeams()) {
             throw new RuntimeException("Auction has reached its maximum team limit of " + auction.getTotalTeams());
         }
+        accessEntitlementService.enforceFreeTeamLimit(username, auctionId, currentTeamCount);
 
         // Check if team name already exists in this auction
         if (teamRepository.findByAuction(auction).stream()

@@ -2,6 +2,7 @@ package com.auction.cricket.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,6 +16,7 @@ import com.auction.cricket.dto.AuthRequest;
 import com.auction.cricket.dto.AuthResponse;
 import com.auction.cricket.dto.RegisterRequest;
 import com.auction.cricket.dto.UserDetailsDto;
+import com.auction.cricket.entity.Role;
 import com.auction.cricket.entity.User;
 import com.auction.cricket.repository.UserRepository;
 import com.auction.cricket.security.JwtUtil;
@@ -38,6 +40,9 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Value("${app.security.allow-admin-register:false}")
+    private boolean allowAdminRegister;
+
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         logger.info("Registering new user: {}", request.getUsername());
@@ -50,13 +55,18 @@ public class UserService {
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setEmail(request.getEmail());
-        if (request.getRoles() != null && !request.getRoles().isEmpty()) {
-            user.setRoles(request.getRoles());
-        } else {
-            java.util.Set<com.auction.cricket.entity.Role> defaultRoles = new java.util.HashSet<>();
-            defaultRoles.add(com.auction.cricket.entity.Role.TEAM_OWNER);
-            user.setRoles(defaultRoles);
+        if (request.getRoles() != null && request.getRoles().contains(com.auction.cricket.entity.Role.ADMIN)
+                && !allowAdminRegister) {
+            throw new IllegalArgumentException("Admin self-registration is disabled.");
         }
+
+        java.util.Set<com.auction.cricket.entity.Role> assignedRoles = new java.util.HashSet<>();
+        if (allowAdminRegister && request.getRoles() != null && !request.getRoles().isEmpty()) {
+            assignedRoles.addAll(request.getRoles());
+        } else {
+            assignedRoles.add(com.auction.cricket.entity.Role.TEAM_OWNER);
+        }
+        user.setRoles(assignedRoles);
         user = userRepository.save(user);
 
         logger.info("User registered successfully: {}", user.getUsername());
@@ -88,8 +98,15 @@ public class UserService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        java.util.Set<String> roles = user.getRoles().stream()
+                .map(Enum::name)
+                .collect(java.util.stream.Collectors.toSet());
+        String primaryRole = user.getRoles().contains(Role.ADMIN) ? Role.ADMIN.name() : Role.TEAM_OWNER.name();
+
         return new UserDetailsDto(
                 user.getUsername(),
-                user.getEmail());
+                user.getEmail(),
+                primaryRole,
+                roles);
     }
 }

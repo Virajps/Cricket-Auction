@@ -18,9 +18,10 @@ import {
     CircularProgress
 } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
-import { auctionService } from '../services/api';
+import { accessService, auctionService } from '../services/api';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
+import PremiumUpsellDialog from './PremiumUpsellDialog';
 
 const pageVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -34,6 +35,9 @@ const AuctionDetails = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState(0);
+    const [hasPremiumAccess, setHasPremiumAccess] = useState(false);
+    const [upsellOpen, setUpsellOpen] = useState(false);
+    const [upsellFeatureName, setUpsellFeatureName] = useState('');
     const { user } = useAuth();
 
     const fetchAuctionDetails = useCallback(async () => {
@@ -52,6 +56,22 @@ const AuctionDetails = () => {
         fetchAuctionDetails();
     }, [id, fetchAuctionDetails]);
 
+    useEffect(() => {
+        let mounted = true;
+        const fetchAccess = async () => {
+            try {
+                const status = await accessService.getStatus(id);
+                if (mounted) {
+                    setHasPremiumAccess(!!status?.auctionAccessActive || !!status?.admin);
+                }
+            } catch (e) {
+                if (mounted) setHasPremiumAccess(false);
+            }
+        };
+        fetchAccess();
+        return () => { mounted = false; };
+    }, [id]);
+
     
 
     const formatDate = (dateString) => {
@@ -62,6 +82,11 @@ const AuctionDetails = () => {
             hour: '2-digit',
             minute: '2-digit'
         });
+    };
+
+    const openUpsell = (featureName) => {
+        setUpsellFeatureName(featureName);
+        setUpsellOpen(true);
     };
 
     if (loading) {
@@ -100,6 +125,11 @@ const AuctionDetails = () => {
                             {auction.name}
                         </Typography>
                         <Chip
+                            label={`ID: ${auction.id}`}
+                            variant="outlined"
+                            color="primary"
+                        />
+                        <Chip
                             label={auction.isActive ? 'Active' : 'Inactive'}
                             color={auction.isActive ? 'success' : 'default'}
                         />
@@ -117,7 +147,13 @@ const AuctionDetails = () => {
                             variant="outlined"
                             color="secondary"
                             sx={{ mr: 2 }}
-                            onClick={() => navigate(`/auctions/${id}/summary`)}
+                            onClick={() => {
+                                if (!hasPremiumAccess) {
+                                    openUpsell('Auction Summary');
+                                    return;
+                                }
+                                navigate(`/auctions/${id}/summary`);
+                            }}
                         >
                             Summary
                         </Button>
@@ -235,7 +271,13 @@ const AuctionDetails = () => {
                                 <Button
                                     variant="outlined"
                                     color="primary"
-                                    onClick={() => navigate(`/auctions/${id}/bid-rules`)}
+                                    onClick={() => {
+                                        if (!hasPremiumAccess) {
+                                            openUpsell('Bid Increase Rules');
+                                            return;
+                                        }
+                                        navigate(`/auctions/${id}/bid-rules`);
+                                    }}
                                 >
                                     Manage Bid Rules
                                 </Button>
@@ -263,6 +305,11 @@ const AuctionDetails = () => {
                     </Paper>
                 )}
             </motion.div>
+            <PremiumUpsellDialog
+                open={upsellOpen}
+                onClose={() => setUpsellOpen(false)}
+                featureName={upsellFeatureName}
+            />
         </Container>
     );
 };

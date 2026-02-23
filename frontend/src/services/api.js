@@ -1,6 +1,41 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8080/api';
+const API_URL = (process.env.REACT_APP_API_URL || 'http://localhost:8080/api').replace(/\/$/, '');
+
+export const getApiErrorMessage = (error, fallback = 'Something went wrong. Please try again.') => {
+    if (!error) return fallback;
+
+    // No HTTP response means network/CORS/server unreachable
+    if (!error.response) {
+        return 'Unable to reach server. Check internet, backend status, or CORS settings.';
+    }
+
+    const data = error.response.data;
+    if (!data) {
+        return fallback;
+    }
+
+    if (typeof data === 'string' && data.trim()) {
+        return data;
+    }
+
+    if (data.message && typeof data.message === 'string' && data.message.trim()) {
+        return data.message;
+    }
+
+    if (data.details && typeof data.details === 'object') {
+        const detailMessages = Object.entries(data.details).map(([field, msg]) => `${field}: ${msg}`);
+        if (detailMessages.length > 0) {
+            return detailMessages.join('; ');
+        }
+    }
+
+    if (data.error && typeof data.error === 'string' && data.error.trim()) {
+        return data.error;
+    }
+
+    return fallback;
+};
 
 const api = axios.create({
     baseURL: API_URL,
@@ -33,6 +68,9 @@ api.interceptors.response.use(
             const returnTo = `${window.location.pathname}${window.location.search}`;
             window.location.href = `/login?redirect=${encodeURIComponent(returnTo)}`;
         }
+        const normalizedMessage = getApiErrorMessage(error);
+        error.userMessage = normalizedMessage;
+        error.message = normalizedMessage;
         return Promise.reject(error);
     }
 );
@@ -337,6 +375,30 @@ export const categoryService = {
     },
     delete: async (auctionId, id) => {
         const response = await api.delete(`/auctions/${auctionId}/categories/${id}`);
+        return response.data;
+    }
+};
+
+export const accessService = {
+    getStatus: async (auctionId = null) => {
+        const query = auctionId != null ? `?auctionId=${encodeURIComponent(auctionId)}` : '';
+        const response = await api.get(`/access/status${query}`);
+        return response.data;
+    }
+};
+
+export const adminEntitlementService = {
+    list: async (username = null) => {
+        const query = username ? `?username=${encodeURIComponent(username)}` : '';
+        const response = await api.get(`/admin/entitlements${query}`);
+        return response.data;
+    },
+    grant: async (payload) => {
+        const response = await api.post('/admin/entitlements', payload);
+        return response.data;
+    },
+    revoke: async (id) => {
+        const response = await api.delete(`/admin/entitlements/${id}`);
         return response.data;
     }
 };

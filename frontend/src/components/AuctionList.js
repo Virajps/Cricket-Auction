@@ -182,6 +182,12 @@ const AuctionList = () => {
                                             </Typography>
                                             <Box sx={{ my: 2 }}>
                                                 <Chip
+                                                    label={`Auction ID: ${auction.id}`}
+                                                    variant="outlined"
+                                                    size="small"
+                                                    sx={{ mr: 1, mb: 1 }}
+                                                />
+                                                <Chip
                                                     label={auction.isActive ? 'Active' : 'Inactive'}
                                                     color={auction.isActive ? 'success' : 'default'}
                                                     size="small"

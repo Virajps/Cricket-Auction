@@ -24,6 +24,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Auction from './components/Auction';
 import AuctionSummary from './components/AuctionSummary';
+import AdminAccessManager from './components/AdminAccessManager';
 import './App.css';
 
 function RouteLoader() {
@@ -74,6 +75,7 @@ function App() {
             <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
             <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
             <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+            <Route path="/admin/access" element={<RequireAuth><AdminAccessManager /></RequireAuth>} />
             {/* Auction routes */}
             <Route path="/auctions" element={<RequireAuth><AuctionList /></RequireAuth>} />
             <Route path="/auctions/create" element={<RequireAuth><AuctionForm /></RequireAuth>} />

@@ -30,12 +30,13 @@ import {
 } from '@mui/material';
 import { Delete as DeleteIcon, Search as SearchIcon, Loop as LoopIcon, CloudUpload as CloudUploadIcon, WorkspacePremium as WorkspacePremiumIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
-import { playerService, auctionService } from '../services/api';
+import { playerService, auctionService, accessService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageType } from './common/ErrorMessage';
 import PlayerDetailsCard from './PlayerDetailsCard';
 import PlayerImport from './PlayerImport';
+import PremiumUpsellDialog from './PremiumUpsellDialog';
 
 
 
@@ -67,6 +68,8 @@ const PlayerList = () => {
     const [playerDetailsDialogOpen, setPlayerDetailsDialogOpen] = useState(false);
     const [selectedPlayer, setSelectedPlayer] = useState(null);
     const [activeTab, setActiveTab] = useState(0);
+    const [hasPremiumAccess, setHasPremiumAccess] = useState(false);
+    const [upsellOpen, setUpsellOpen] = useState(false);
 
     const normalizeText = (value) => (value || '')
         .toString()
@@ -137,6 +140,22 @@ const PlayerList = () => {
         fetchAuction();
         fetchPlayers();
     }, [auctionId, fetchAuction, fetchPlayers]);
+
+    useEffect(() => {
+        let mounted = true;
+        const fetchAccess = async () => {
+            try {
+                const status = await accessService.getStatus(auctionId);
+                if (mounted) {
+                    setHasPremiumAccess(!!status?.auctionAccessActive || !!status?.admin);
+                }
+            } catch {
+                if (mounted) setHasPremiumAccess(false);
+            }
+        };
+        fetchAccess();
+        return () => { mounted = false; };
+    }, [auctionId]);
 
     const handleDeleteClick = (event, player) => {
         event.stopPropagation();
@@ -225,6 +244,7 @@ const PlayerList = () => {
                 <Typography variant="h2" component="h1">
                     Players ({filteredPlayers.length})
                 </Typography>
+                <Chip label={`Auction ID: ${auctionId}`} variant="outlined" color="primary" />
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     {showSearchBar && (
                         <TextField
@@ -283,7 +303,13 @@ const PlayerList = () => {
                                 <Button
                                     variant="contained"
                                     startIcon={<CloudUploadIcon />}
-                                    onClick={() => setActiveTab(1)}
+                                    onClick={() => {
+                                        if (!hasPremiumAccess) {
+                                            setUpsellOpen(true);
+                                            return;
+                                        }
+                                        setActiveTab(1);
+                                    }}
                                     sx={{
                                         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                                     }}
@@ -320,7 +346,13 @@ const PlayerList = () => {
 
             <Tabs
                 value={activeTab}
-                onChange={(e, newValue) => setActiveTab(newValue)}
+                onChange={(e, newValue) => {
+                    if (newValue === 1 && !hasPremiumAccess) {
+                        setUpsellOpen(true);
+                        return;
+                    }
+                    setActiveTab(newValue);
+                }}
                 sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}
             >
                 <Tab label={`Players (${filteredPlayers.length})`} />
@@ -328,6 +360,12 @@ const PlayerList = () => {
                     <Tab label="Import Players" icon={<CloudUploadIcon />} iconPosition="start" />
                 )}
             </Tabs>
+
+            {!hasPremiumAccess && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                    Player import is available on paid access.
+                </Alert>
+            )}
 
             {activeTab === 0 && (
                 <>
@@ -469,7 +507,7 @@ const PlayerList = () => {
                 </>
             )}
 
-            {activeTab === 1 && (user?.role === 'ADMIN' || user?.username === auction?.createdBy) && (
+            {activeTab === 1 && hasPremiumAccess && (user?.role === 'ADMIN' || user?.username === auction?.createdBy) && (
                 <Box sx={{ mt: 3 }}>
                     <PlayerImport auctionId={parseInt(auctionId)} onImportComplete={handleImportComplete} />
                 </Box>
@@ -495,6 +533,11 @@ const PlayerList = () => {
                 open={playerDetailsDialogOpen}
                 handleClose={handleClosePlayerDetails}
                 player={selectedPlayer}
+            />
+            <PremiumUpsellDialog
+                open={upsellOpen}
+                onClose={() => setUpsellOpen(false)}
+                featureName="Import Players (Excel)"
             />
         </Container>
     );

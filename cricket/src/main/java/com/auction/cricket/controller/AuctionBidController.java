@@ -3,12 +3,14 @@ package com.auction.cricket.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.auction.cricket.dto.BidResponse;
+import com.auction.cricket.service.AccessEntitlementService;
 import com.auction.cricket.service.BidService;
 
 @RestController
@@ -16,13 +18,16 @@ import com.auction.cricket.service.BidService;
 public class AuctionBidController {
 
     private final BidService bidService;
+    private final AccessEntitlementService accessEntitlementService;
 
-    public AuctionBidController(BidService bidService) {
+    public AuctionBidController(BidService bidService, AccessEntitlementService accessEntitlementService) {
         this.bidService = bidService;
+        this.accessEntitlementService = accessEntitlementService;
     }
 
     @GetMapping
-    public ResponseEntity<List<BidResponse>> getBidsByAuction(@PathVariable Long auctionId) {
+    public ResponseEntity<List<BidResponse>> getBidsByAuction(@PathVariable Long auctionId, Authentication authentication) {
+        accessEntitlementService.requirePremiumAccess(authentication.getName(), auctionId, "Auction summary");
         return ResponseEntity.ok(bidService.getBidsByAuction(auctionId));
     }
 }

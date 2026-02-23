@@ -12,6 +12,7 @@ import com.auction.cricket.entity.Auction;
 import com.auction.cricket.entity.Player;
 import com.auction.cricket.entity.PlayerStatus;
 import com.auction.cricket.entity.Team;
+import com.auction.cricket.exception.ForbiddenException;
 import com.auction.cricket.exception.ResourceNotFoundException;
 import com.auction.cricket.repository.AuctionRepository;
 import com.auction.cricket.repository.PlayerRepository;
@@ -23,18 +24,27 @@ public class PlayerService {
     private final PlayerRepository playerRepository;
     private final TeamRepository teamRepository;
     private final AuctionRepository auctionRepository;
+    private final AccessEntitlementService accessEntitlementService;
 
     public PlayerService(PlayerRepository playerRepository, TeamRepository teamRepository,
-            AuctionRepository auctionRepository) {
+            AuctionRepository auctionRepository, AccessEntitlementService accessEntitlementService) {
         this.playerRepository = playerRepository;
         this.teamRepository = teamRepository;
         this.auctionRepository = auctionRepository;
+        this.accessEntitlementService = accessEntitlementService;
     }
 
     @Transactional
-    public PlayerResponse createPlayer(Long auctionId, PlayerRequest request) {
+    public PlayerResponse createPlayer(Long auctionId, PlayerRequest request, String username) {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Auction not found with id: " + auctionId));
+
+        if (!accessEntitlementService.hasPremiumAccess(username, auctionId)) {
+            long currentPlayers = playerRepository.countByAuction(auction);
+            if (currentPlayers >= 40) {
+                throw new ForbiddenException("Free plan allows up to 40 players per auction.");
+            }
+        }
 
         Player player = new Player();
         player.setName(request.getName());

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +21,7 @@ import com.auction.cricket.entity.BidRule;
 import com.auction.cricket.exception.ResourceNotFoundException;
 import com.auction.cricket.repository.AuctionRepository;
 import com.auction.cricket.repository.BidRuleRepository;
+import com.auction.cricket.service.AccessEntitlementService;
 
 import jakarta.validation.Valid;
 
@@ -29,14 +31,18 @@ public class BidRuleController {
 
     private final BidRuleRepository bidRuleRepository;
     private final AuctionRepository auctionRepository;
+    private final AccessEntitlementService accessEntitlementService;
 
-    public BidRuleController(BidRuleRepository bidRuleRepository, AuctionRepository auctionRepository) {
+    public BidRuleController(BidRuleRepository bidRuleRepository, AuctionRepository auctionRepository,
+            AccessEntitlementService accessEntitlementService) {
         this.bidRuleRepository = bidRuleRepository;
         this.auctionRepository = auctionRepository;
+        this.accessEntitlementService = accessEntitlementService;
     }
 
     @GetMapping
-    public ResponseEntity<List<BidRuleResponse>> getAll(@PathVariable Long auctionId) {
+    public ResponseEntity<List<BidRuleResponse>> getAll(@PathVariable Long auctionId, Authentication authentication) {
+        accessEntitlementService.requirePremiumAccess(authentication.getName(), auctionId, "Bid increment rules");
         return ResponseEntity.ok(
                 bidRuleRepository.findByAuctionIdOrderByThresholdAmountAsc(auctionId).stream()
                         .map(this::toResponse)
@@ -44,7 +50,9 @@ public class BidRuleController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BidRuleResponse> getById(@PathVariable Long auctionId, @PathVariable Long id) {
+    public ResponseEntity<BidRuleResponse> getById(@PathVariable Long auctionId, @PathVariable Long id,
+            Authentication authentication) {
+        accessEntitlementService.requirePremiumAccess(authentication.getName(), auctionId, "Bid increment rules");
         BidRule rule = bidRuleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Bid rule not found with id: " + id));
         if (!rule.getAuction().getId().equals(auctionId)) {
@@ -55,7 +63,9 @@ public class BidRuleController {
 
     @PostMapping
     public ResponseEntity<BidRuleResponse> create(@PathVariable Long auctionId,
-            @Valid @RequestBody BidRuleRequest request) {
+            @Valid @RequestBody BidRuleRequest request,
+            Authentication authentication) {
+        accessEntitlementService.requirePremiumAccess(authentication.getName(), auctionId, "Bid increment rules");
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Auction not found with id: " + auctionId));
         BidRule rule = new BidRule();
@@ -68,7 +78,9 @@ public class BidRuleController {
 
     @PutMapping("/{id}")
     public ResponseEntity<BidRuleResponse> update(@PathVariable Long auctionId, @PathVariable Long id,
-            @Valid @RequestBody BidRuleRequest request) {
+            @Valid @RequestBody BidRuleRequest request,
+            Authentication authentication) {
+        accessEntitlementService.requirePremiumAccess(authentication.getName(), auctionId, "Bid increment rules");
         BidRule rule = bidRuleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Bid rule not found with id: " + id));
         if (!rule.getAuction().getId().equals(auctionId)) {
@@ -81,7 +93,9 @@ public class BidRuleController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long auctionId, @PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long auctionId, @PathVariable Long id,
+            Authentication authentication) {
+        accessEntitlementService.requirePremiumAccess(authentication.getName(), auctionId, "Bid increment rules");
         BidRule rule = bidRuleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Bid rule not found with id: " + id));
         if (!rule.getAuction().getId().equals(auctionId)) {

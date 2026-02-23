@@ -23,8 +23,9 @@ import StarIcon from '@mui/icons-material/Star';
 import { playerService, teamService } from '../services/api';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import PremiumUpsellDialog from './PremiumUpsellDialog';
 
-const TeamDetailsCard = ({ open, handleClose, team, players, auctionId, auction, onPlayersUpdated, onTeamUpdated }) => {
+const TeamDetailsCard = ({ open, handleClose, team, players, auctionId, auction, hasPremiumAccess, onPlayersUpdated, onTeamUpdated }) => {
     const [iconDialogOpen, setIconDialogOpen] = React.useState(false);
     const [availablePlayers, setAvailablePlayers] = React.useState([]);
     const [iconLoading, setIconLoading] = React.useState(false);
@@ -37,6 +38,7 @@ const TeamDetailsCard = ({ open, handleClose, team, players, auctionId, auction,
     const [directAddError, setDirectAddError] = React.useState(null);
     const [directAddSearchQuery, setDirectAddSearchQuery] = React.useState('');
     const [directAddPriceByPlayer, setDirectAddPriceByPlayer] = React.useState({});
+    const [upsellOpen, setUpsellOpen] = React.useState(false);
 
     const openIconDialog = async () => {
         setIconDialogOpen(true);
@@ -350,7 +352,17 @@ const TeamDetailsCard = ({ open, handleClose, team, players, auctionId, auction,
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, mb: 1, gap: 1, flexWrap: 'wrap' }}>
                         <Typography variant="h5">Players</Typography>
                         <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Button variant="outlined" size="small" onClick={handleDownloadPdf}>
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={() => {
+                                    if (!hasPremiumAccess) {
+                                        setUpsellOpen(true);
+                                        return;
+                                    }
+                                    handleDownloadPdf();
+                                }}
+                            >
                                 Download PDF
                             </Button>
                             <Button variant="contained" size="small" color="success" onClick={openDirectAddDialog}>
@@ -617,6 +629,11 @@ const TeamDetailsCard = ({ open, handleClose, team, players, auctionId, auction,
                     <Button onClick={closeDirectAddDialog}>Close</Button>
                 </DialogActions>
             </Dialog>
+            <PremiumUpsellDialog
+                open={upsellOpen}
+                onClose={() => setUpsellOpen(false)}
+                featureName="Download Team Players List"
+            />
         </Dialog>
     );
 };
