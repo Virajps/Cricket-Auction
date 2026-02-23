@@ -18,7 +18,6 @@ import {
 import { motion } from 'framer-motion';
 import { teamService, playerService, auctionService, accessService } from '../services/api';
 import { webSocketService } from '../services/websocket';
-import { useAuth } from '../contexts/AuthContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import Autocomplete from '@mui/material/Autocomplete';
 import PremiumUpsellDialog from './PremiumUpsellDialog';
@@ -32,11 +31,6 @@ const pickRandomPlayer = (list) => {
 
 const Auction = () => {
     const { id: auctionId } = useParams();
-    // eslint-disable-next-line no-unused-vars
-    // eslint-disable-next-line no-unused-vars
-    // eslint-disable-next-line no-unused-vars
-    // eslint-disable-next-line no-unused-vars
-    const { user } = useAuth(); // eslint-disable-next-line no-unused-vars
     const navigate = useNavigate();
     const [players, setPlayers] = useState([]);
     const [bids, setBids] = useState([]);
@@ -255,9 +249,12 @@ const Auction = () => {
                     setPlayers(Array.isArray(playersData) ? playersData : []);
                     setTeams(teamsData || []);
                     setAuction(auctionData);
-                    if (!selectedPlayer && playersData && playersData.length > 0) {
-                        setSelectedPlayer(pickRandomPlayer(playersData));
-                    }
+                    setSelectedPlayer((prevSelectedPlayer) => {
+                        if (!prevSelectedPlayer && playersData && playersData.length > 0) {
+                            return pickRandomPlayer(playersData);
+                        }
+                        return prevSelectedPlayer;
+                    });
                 }
             } catch (error) {
                 console.error('Error loading data:', error);

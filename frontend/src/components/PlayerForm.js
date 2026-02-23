@@ -15,7 +15,6 @@ import {
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { playerService, auctionService } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import ErrorMessage, { MessageType } from './common/ErrorMessage';
 import { motion } from 'framer-motion';
 

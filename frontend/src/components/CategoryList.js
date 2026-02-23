@@ -16,7 +16,6 @@ import {
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { categoryService } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const cardVariants = {
@@ -34,7 +33,6 @@ const CategoryList = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
-    const { user } = useAuth();
 
     const fetchCategories = useCallback(async () => {
         try {

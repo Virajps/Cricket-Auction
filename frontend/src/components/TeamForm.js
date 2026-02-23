@@ -15,14 +15,12 @@ import {
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { teamService, auctionService } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import ErrorMessage, { MessageType } from './common/ErrorMessage';
 import { motion } from 'framer-motion';
 
 const TeamForm = () => {
     const { id, auctionId } = useParams();
     const navigate = useNavigate();
-    const { user } = useAuth();
     const [formData, setFormData] = useState({
         name: '',
         isActive: true,
