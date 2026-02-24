@@ -14,13 +14,16 @@ import {
     Chip,
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
-import { teamService, auctionService } from '../services/api';
+import { teamService, auctionService, accessService } from '../services/api';
 import ErrorMessage, { MessageType } from './common/ErrorMessage';
 import { motion } from 'framer-motion';
+import PremiumUpsellDialog from './PremiumUpsellDialog';
+import { useAuth } from '../contexts/AuthContext';
 
 const TeamForm = () => {
     const { id, auctionId } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [formData, setFormData] = useState({
         name: '',
         isActive: true,
@@ -31,6 +34,9 @@ const TeamForm = () => {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
     const [teams, setTeams] = useState([]);
+    const [hasPremiumAccess, setHasPremiumAccess] = useState(false);
+    const [pricingDialogOpen, setPricingDialogOpen] = useState(false);
+    const isAdmin = user?.role === 'ADMIN' || user?.roles?.includes?.('ADMIN');
 
     const fetchAuction = useCallback(async () => {
         try {
@@ -89,6 +95,20 @@ const TeamForm = () => {
         }
     }, [id, auctionId, fetchAuction, fetchTeams, fetchTeam]);
 
+    useEffect(() => {
+        let mounted = true;
+        const fetchAccess = async () => {
+            try {
+                const status = await accessService.getStatus(auctionId);
+                if (mounted) setHasPremiumAccess(!!status?.auctionAccessActive || !!status?.admin);
+            } catch {
+                if (mounted) setHasPremiumAccess(false);
+            }
+        };
+        fetchAccess();
+        return () => { mounted = false; };
+    }, [auctionId]);
+
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({
@@ -106,6 +126,17 @@ const TeamForm = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
+
+        if (!id && !isAdmin && !hasPremiumAccess && teams.length >= 2) {
+            setPricingDialogOpen(true);
+            setError({
+                type: MessageType.WARNING,
+                title: 'Upgrade Required',
+                message: 'Free plan allows up to 2 teams. Upgrade to add a 3rd team.'
+            });
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -133,6 +164,17 @@ const TeamForm = () => {
                     type: MessageType.WARNING,
                     title: 'Team Name Already Exists',
                     message: 'Please choose a different team name. Team names must be unique within an auction.'
+                });
+            } else if (
+                errorMessage.toLowerCase().includes('free') &&
+                errorMessage.toLowerCase().includes('team') &&
+                errorMessage.toLowerCase().includes('limit')
+            ) {
+                setPricingDialogOpen(true);
+                setError({
+                    type: MessageType.WARNING,
+                    title: 'Upgrade Required',
+                    message: 'Free plan allows up to 2 teams. Upgrade to add more teams.'
                 });
             } else if (errorMessage.includes('maximum team limit')) {
                 setError({
@@ -163,6 +205,7 @@ const TeamForm = () => {
     }
 
     const isTeamLimitReached = auction && teams.length >= auction.totalTeams;
+    const isFreePlanTeamLimitReached = !id && !isAdmin && !hasPremiumAccess && teams.length >= 2;
 
     const formVariants = {
         hidden: { opacity: 0, y: 40 },
@@ -240,7 +283,9 @@ const TeamForm = () => {
                                     variant="outlined"
                                     helperText={isTeamLimitReached 
                                         ? "Cannot create more teams as the auction has reached its team limit"
-                                        : "Choose a unique name for your team"
+                                        : isFreePlanTeamLimitReached
+                                            ? "Free plan supports up to 2 teams. Upgrade to add more."
+                                            : "Choose a unique name for your team"
                                     }
                                     disabled={!id && isTeamLimitReached}
                                     error={error?.type === MessageType.WARNING && error?.title === 'Team Name Already Exists'}
@@ -305,6 +350,11 @@ const TeamForm = () => {
                         </Grid>
                     </form>
                 </Paper>
+                <PremiumUpsellDialog
+                    open={pricingDialogOpen}
+                    onClose={() => setPricingDialogOpen(false)}
+                    featureName="Creating more than 2 teams"
+                />
             </motion.div>
         </Container>
     );

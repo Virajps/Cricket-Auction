@@ -30,6 +30,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { teamService, auctionService, playerService, accessService } from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import TeamDetailsCard from './TeamDetailsCard';
+import PremiumUpsellDialog from './PremiumUpsellDialog';
 
 const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -52,6 +53,7 @@ const TeamList = () => {
     const [selectedTeam, setSelectedTeam] = useState(null);
     const [selectedTeamPlayers, setSelectedTeamPlayers] = useState([]);
     const [hasPremiumAccess, setHasPremiumAccess] = useState(false);
+    const [pricingDialogOpen, setPricingDialogOpen] = useState(false);
 
         const fetchData = useCallback(async () => {
         try {
@@ -137,6 +139,17 @@ const TeamList = () => {
         }).format(amount);
     };
 
+    const isAdmin = user?.role === 'ADMIN' || user?.roles?.includes?.('ADMIN');
+    const canCreateMoreThanTwoTeams = hasPremiumAccess || isAdmin;
+
+    const handleCreateTeam = () => {
+        if (!canCreateMoreThanTwoTeams && teams.length >= 2) {
+            setPricingDialogOpen(true);
+            return;
+        }
+        navigate(`/auctions/${auctionId}/teams/new`);
+    };
+
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
@@ -192,7 +205,7 @@ const TeamList = () => {
                     variant="contained"
                     color="primary"
                     startIcon={<AddIcon />}
-                    onClick={() => navigate(`/auctions/${auctionId}/teams/new`)}
+                    onClick={handleCreateTeam}
                 >
                     Create Team
                 </Button>
@@ -317,6 +330,11 @@ const TeamList = () => {
                 hasPremiumAccess={hasPremiumAccess}
                 onPlayersUpdated={setSelectedTeamPlayers}
                 onTeamUpdated={refreshTeams}
+            />
+            <PremiumUpsellDialog
+                open={pricingDialogOpen}
+                onClose={() => setPricingDialogOpen(false)}
+                featureName="Creating more than 2 teams"
             />
         </Container>
     );

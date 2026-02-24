@@ -430,8 +430,17 @@ export const adminEntitlementService = {
         const response = await api.get(`/admin/entitlements${query}`);
         return response.data;
     },
+    searchUsers: async (query = '') => {
+        const q = query ? `?query=${encodeURIComponent(query)}` : '';
+        const response = await api.get(`/admin/entitlements/users${q}`);
+        return response.data;
+    },
     grant: async (payload) => {
         const response = await api.post('/admin/entitlements', payload);
+        return response.data;
+    },
+    update: async (id, payload) => {
+        const response = await api.put(`/admin/entitlements/${id}`, payload);
         return response.data;
     },
     revoke: async (id) => {

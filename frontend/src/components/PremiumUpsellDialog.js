@@ -19,8 +19,8 @@ import {
     Typography
 } from '@mui/material';
 
-const CONTACT_PHONE = 'Your Phone Number';
-const CONTACT_EMAIL = 'your-email@example.com';
+const CONTACT_PHONE = '7016194255';
+const CONTACT_EMAIL = 'vpshah543@gmail.com';
 
 const pricingRows = [
     { plan: 'Per Auction Pass', price: 'INR 799 / auction' },
